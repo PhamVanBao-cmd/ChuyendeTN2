@@ -1,0 +1,101 @@
+import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:intl/intl.dart';
+
+class HistoryScreen extends StatelessWidget {
+  const HistoryScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("Lịch sử sức khỏe"),
+        centerTitle: true,
+      ),
+      body: StreamBuilder<QuerySnapshot>(
+        stream: FirebaseFirestore.instance
+            .collection('health')
+            .where('userId', isEqualTo: user?.uid)
+            .orderBy('createdAt', descending: true)
+            .snapshots(),
+        builder: (context, snapshot) {
+          /// ⏳ Loading
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          /// ❌ Không có data
+          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+            return const Center(child: Text("Chưa có dữ liệu"));
+          }
+
+          final docs = snapshot.data!.docs;
+
+          return ListView.builder(
+            itemCount: docs.length,
+            itemBuilder: (context, index) {
+              final item = docs[index].data() as Map<String, dynamic>;
+
+              /// 🔥 FIX NULL AN TOÀN
+              final bmi = (item['bmi'] ?? 0).toDouble();
+              final weight = item['weight'] ?? '';
+              final height = item['height'] ?? '';
+              final systolic = item['systolic'] ?? '';
+              final diastolic = item['diastolic'] ?? '';
+              final heartRate = item['heartRate'] ?? '';
+              final bloodSugar = item['bloodSugar'] ?? '';
+
+              /// 🔥 FIX Timestamp
+              DateTime date = DateTime.now();
+              if (item['createdAt'] != null &&
+                  item['createdAt'] is Timestamp) {
+                date = (item['createdAt'] as Timestamp).toDate();
+              }
+
+              final formattedDate =
+              DateFormat('dd/MM/yyyy HH:mm').format(date);
+
+              return Card(
+                margin:
+                const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                elevation: 3,
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      /// 📅 Ngày
+                      Text(
+                        "📅 $formattedDate",
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+
+                      const SizedBox(height: 8),
+
+                      /// 📊 Chỉ số
+                      Text("BMI: ${bmi.toStringAsFixed(2)}"),
+                      Text("Cân nặng: $weight kg"),
+                      Text("Chiều cao: $height cm"),
+                      Text("Huyết áp: $systolic/$diastolic mmHg"),
+                      Text("Nhịp tim: $heartRate bpm"),
+                      Text("Đường huyết: $bloodSugar mmol/L"),
+                    ],
+                  ),
+                ),
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
+}
