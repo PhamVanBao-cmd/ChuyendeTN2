@@ -1,0 +1,55 @@
+import 'package:flutter/material.dart';
+import '../../health/screens/health_input_screen.dart';
+import '../../health/screens/history_screen.dart';
+import '../../profile/screens/profile_screen.dart';
+
+class DashboardScreen extends StatelessWidget {
+  const DashboardScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text("Dashboard")),
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            ElevatedButton(
+              child: const Text("Nhập sức khỏe"),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const HealthInputScreen(),
+                  ),
+                );
+              },
+            ),
+            ElevatedButton(
+              child: const Text("Lịch sử"),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const HistoryScreen(),
+                  ),
+                );
+              },
+            ),
+            ElevatedButton(
+              child: const Text("Hồ sơ"),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const ProfileScreen(),
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
