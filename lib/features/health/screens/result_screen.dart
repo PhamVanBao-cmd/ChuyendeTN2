@@ -41,10 +41,11 @@ class _ResultScreenState extends State<ResultScreen> {
   /// 🔥 Lưu Firebase
   Future<void> saveData() async {
     final user = FirebaseAuth.instance.currentUser;
+
     if (user == null) return;
 
     await FirebaseFirestore.instance.collection('health').add({
-      'userId': user.uid,
+      'userId': user.uid, // 🔥 BẮT BUỘC
       'bmi': widget.bmi,
       'weight': widget.weight,
       'height': widget.height,
@@ -52,8 +53,8 @@ class _ResultScreenState extends State<ResultScreen> {
       'diastolic': widget.diastolic,
       'heartRate': widget.heartRate,
       'bloodSugar': widget.bloodSugar,
-      'cholesterol': widget.cholesterol, // 🆕
-      'time': Timestamp.now(),
+      'cholesterol': widget.cholesterol,
+      'time': Timestamp.now(), // 🔥 dùng time
     });
   }
 

@@ -11,145 +11,92 @@ class ChartScreen extends StatefulWidget {
 }
 
 class _ChartScreenState extends State<ChartScreen> {
-  String filter = "all";
+  List<FlSpot> spots = [];
+  bool isLoading = true;
 
-  Stream<QuerySnapshot> getData() {
-    final user = FirebaseAuth.instance.currentUser;
-
-    Query query = FirebaseFirestore.instance
-        .collection('health')
-        .where('userId', isEqualTo: user!.uid)
-        .orderBy('time', descending: false);
-
-    return query.snapshots();
+  @override
+  void initState() {
+    super.initState();
+    loadData();
   }
 
-  List<FlSpot> buildSpots(List docs, String field) {
-    List<FlSpot> spots = [];
+  Future<void> loadData() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
 
-    for (int i = 0; i < docs.length; i++) {
-      double value = (docs[i][field] ?? 0).toDouble();
-      spots.add(FlSpot(i.toDouble(), value));
+      if (user == null) {
+        print("❌ CHƯA LOGIN");
+        return;
+      }
+
+      final snapshot = await FirebaseFirestore.instance
+          .collection('health')
+          .where('userId', isEqualTo: user.uid)
+          .orderBy('time')
+          .get();
+
+      print("🔥 SỐ DATA: ${snapshot.docs.length}");
+
+      List<FlSpot> temp = [];
+
+      for (int i = 0; i < snapshot.docs.length; i++) {
+        final data = snapshot.docs[i].data();
+
+        double bmi = (data['bmi'] ?? 0).toDouble();
+
+        print("👉 BMI: $bmi");
+
+        temp.add(FlSpot(i.toDouble(), bmi));
+      }
+
+      setState(() {
+        spots = temp;
+        isLoading = false;
+      });
+    } catch (e) {
+      print("❌ LỖI CHART: $e");
+      setState(() => isLoading = false);
     }
-
-    return spots;
-  }
-
-  Widget buildChart(List docs) {
-    final bmiSpots = buildSpots(docs, 'bmi');
-    final heartSpots = buildSpots(docs, 'heartRate');
-    final sugarSpots = buildSpots(docs, 'bloodSugar');
-
-    return LineChart(
-      LineChartData(
-        gridData: FlGridData(show: true),
-        borderData: FlBorderData(show: true),
-
-        titlesData: FlTitlesData(show: true),
-
-        lineBarsData: [
-          LineChartBarData(
-            spots: bmiSpots,
-            isCurved: true,
-            dotData: FlDotData(show: false),
-          ),
-          LineChartBarData(
-            spots: heartSpots,
-            isCurved: true,
-            dotData: FlDotData(show: false),
-          ),
-          LineChartBarData(
-            spots: sugarSpots,
-            isCurved: true,
-            dotData: FlDotData(show: false),
-          ),
-        ],
-      ),
-    );
-  }
-
-  List filterData(List docs) {
-    if (filter == "7") {
-      return docs.take(7).toList();
-    }
-    if (filter == "30") {
-      return docs.take(30).toList();
-    }
-    return docs;
-  }
-
-  Widget buildFilter() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      children: [
-        filterBtn("7 ngày", "7"),
-        filterBtn("30 ngày", "30"),
-        filterBtn("Tất cả", "all"),
-      ],
-    );
-  }
-
-  Widget filterBtn(String text, String value) {
-    return ElevatedButton(
-      onPressed: () {
-        setState(() {
-          filter = value;
-        });
-      },
-      child: Text(text),
-    );
-  }
-
-  Widget buildLegend() {
-    return Column(
-      children: const [
-        Text("BMI"),
-        Text("Nhịp tim"),
-        Text("Đường huyết"),
-      ],
-    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text("Biểu đồ sức khỏe")),
-      body: Column(
-        children: [
-          const SizedBox(height: 10),
 
-          buildFilter(),
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : spots.isEmpty
+          ? const Center(child: Text("Không có dữ liệu 😢"))
+          : Padding(
+        padding: const EdgeInsets.all(16),
+        child: LineChart(
+          LineChartData(
+            gridData: FlGridData(show: true),
+            borderData: FlBorderData(show: true),
 
-          const SizedBox(height: 10),
-
-          Expanded(
-            child: StreamBuilder<QuerySnapshot>(
-              stream: getData(),
-              builder: (context, snapshot) {
-                if (!snapshot.hasData) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-
-                final docs = filterData(snapshot.data!.docs);
-
-                if (docs.isEmpty) {
-                  return const Center(child: Text("Chưa có dữ liệu"));
-                }
-
-                return Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    children: [
-                      Expanded(child: buildChart(docs)),
-                      const SizedBox(height: 10),
-                      buildLegend(),
-                    ],
-                  ),
-                );
-              },
+            /// 📊 trục
+            titlesData: FlTitlesData(
+              leftTitles: AxisTitles(
+                sideTitles: SideTitles(showTitles: true),
+              ),
+              bottomTitles: AxisTitles(
+                sideTitles: SideTitles(showTitles: true),
+              ),
             ),
+
+            /// 📈 line giống Google Fit
+            lineBarsData: [
+              LineChartBarData(
+                spots: spots,
+                isCurved: true,
+                barWidth: 4,
+                dotData: FlDotData(show: true),
+                belowBarData: BarAreaData(show: true),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

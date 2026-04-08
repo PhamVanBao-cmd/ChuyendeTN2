@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:intl/intl.dart';
 
 class HistoryScreen extends StatelessWidget {
   const HistoryScreen({super.key});
@@ -11,12 +10,12 @@ class HistoryScreen extends StatelessWidget {
     final user = FirebaseAuth.instance.currentUser;
 
     return Scaffold(
-      appBar: AppBar(title: const Text("Lịch sử")),
+      appBar: AppBar(title: const Text("Lịch sử sức khỏe")),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
             .collection('health')
             .where('userId', isEqualTo: user!.uid) // 🔥 lọc user
-            .orderBy('time', descending: true)
+            .orderBy('time', descending: true) // 🔥 mới nhất trước
             .snapshots(),
         builder: (context, snapshot) {
           if (!snapshot.hasData) {
@@ -34,16 +33,19 @@ class HistoryScreen extends StatelessWidget {
             itemBuilder: (context, index) {
               final data = docs[index];
 
-              final time = (data['time'] as Timestamp).toDate();
-              final formatted =
-              DateFormat('dd/MM/yyyy HH:mm').format(time);
-
               return Card(
                 margin: const EdgeInsets.all(10),
                 child: ListTile(
                   title: Text("BMI: ${data['bmi'].toStringAsFixed(2)}"),
-                  subtitle: Text(
-                      "Ngày: $formatted\nTim: ${data['heartRate']} bpm"),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text("Huyết áp: ${data['systolic']}/${data['diastolic']}"),
+                      Text("Nhịp tim: ${data['heartRate']}"),
+                      Text("Đường: ${data['bloodSugar']}"),
+                      Text("Mỡ máu: ${data['cholesterol']}"),
+                    ],
+                  ),
                 ),
               );
             },
