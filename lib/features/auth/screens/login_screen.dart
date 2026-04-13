@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-import '../../dashboard/screens/dashboard_screen.dart';
 import 'register_screen.dart';
+import 'welcome_after_login_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -26,11 +26,11 @@ class _LoginScreenState extends State<LoginScreen> {
         password: passwordController.text.trim(),
       );
 
-      /// 👉 vào dashboard
+      /// 👉 vào welcome
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (_) => const DashboardScreen(),
+          builder: (_) => const WelcomeAfterLoginScreen(),
         ),
       );
     } catch (e) {

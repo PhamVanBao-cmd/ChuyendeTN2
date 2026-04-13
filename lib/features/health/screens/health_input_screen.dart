@@ -15,64 +15,49 @@ class _HealthInputScreenState extends State<HealthInputScreen> {
   final diastolicController = TextEditingController();
   final heartRateController = TextEditingController();
   final bloodSugarController = TextEditingController();
-  final cholesterolController = TextEditingController(); // 🆕 mỡ máu
+  final cholesterolController = TextEditingController();
 
-  void handleSubmit() {
-    try {
-      double weight =
-          double.tryParse(weightController.text.replaceAll(',', '.')) ?? 0;
+  double bmi = 0;
 
-      double height =
-          double.tryParse(heightController.text.replaceAll(',', '.')) ?? 0;
+  void calculateAndGo() {
+    double weight = double.tryParse(weightController.text) ?? 0;
+    double heightCm = double.tryParse(heightController.text) ?? 0;
 
-      if (weight == 0 || height == 0) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Vui lòng nhập đầy đủ dữ liệu!")),
-        );
-        return;
-      }
+    /// 👉 đổi cm -> m
+    double heightM = heightCm / 100;
 
-      double bmi = weight / (height * height);
+    if (weight == 0 || heightM == 0) return;
 
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => ResultScreen(
-            bmi: bmi,
-            weight: weight,
-            height: height * 100, // hiển thị cm
-            systolic: systolicController.text,
-            diastolic: diastolicController.text,
-            heartRate: heartRateController.text,
-            bloodSugar: bloodSugarController.text,
-            cholesterol: cholesterolController.text, // 🆕
-          ),
+    bmi = weight / (heightM * heightM);
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ResultScreen(
+          bmi: bmi,
+          weight: weight,
+          height: heightCm,
+          systolic: systolicController.text,
+          diastolic: diastolicController.text,
+          heartRate: heartRateController.text,
+          bloodSugar: bloodSugarController.text,
+          cholesterol: cholesterolController.text,
         ),
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Lỗi dữ liệu nhập!")),
-      );
-    }
+      ),
+    );
   }
 
-  Widget buildInput({
-    required TextEditingController controller,
-    required String label,
-    required String unit,
-    IconData? icon,
-  }) {
+  Widget buildInput(String label, TextEditingController controller,
+      {String unit = ""}) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+      padding: const EdgeInsets.symmetric(vertical: 8),
       child: TextField(
         controller: controller,
         keyboardType: TextInputType.number,
         decoration: InputDecoration(
-          labelText: label,
-          suffixText: unit,
-          prefixIcon: icon != null ? Icon(icon) : null,
+          labelText: "$label $unit",
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(12),
           ),
         ),
       ),
@@ -81,86 +66,73 @@ class _HealthInputScreenState extends State<HealthInputScreen> {
 
   @override
   Widget build(BuildContext context) {
+    double screenWidth = MediaQuery.of(context).size.width;
+
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Nhập sức khỏe"),
-        centerTitle: true,
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            /// 🧍 Cơ bản
-            buildInput(
-              controller: weightController,
-              label: "Cân nặng",
-              unit: "kg",
-              icon: Icons.monitor_weight,
-            ),
+      appBar: AppBar(title: const Text("Nhập sức khỏe")),
+      body: Center(
+        child: Container(
+          width: screenWidth > 600 ? 400 : double.infinity, // 🔥 fix web
+          padding: const EdgeInsets.all(16),
+          child: SingleChildScrollView(
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    blurRadius: 10,
+                    color: Colors.black12,
+                  )
+                ],
+              ),
+              child: Column(
+                children: [
 
-            buildInput(
-              controller: heightController,
-              label: "Chiều cao",
-              unit: "m",
-              icon: Icons.height,
-            ),
+                  /// 📊 TITLE
+                  const Text(
+                    "Nhập thông tin sức khỏe",
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
 
-            /// ❤️ Huyết áp
-            buildInput(
-              controller: systolicController,
-              label: "Huyết áp tâm thu",
-              unit: "mmHg",
-              icon: Icons.favorite,
-            ),
+                  const SizedBox(height: 20),
 
-            buildInput(
-              controller: diastolicController,
-              label: "Huyết áp tâm trương",
-              unit: "mmHg",
-              icon: Icons.favorite_border,
-            ),
+                  buildInput("Cân nặng", weightController, unit: "(kg)"),
+                  buildInput("Chiều cao", heightController, unit: "(cm)"),
 
-            /// 💓 Nhịp tim
-            buildInput(
-              controller: heartRateController,
-              label: "Nhịp tim",
-              unit: "bpm",
-              icon: Icons.favorite,
-            ),
+                  buildInput("Huyết áp tâm thu", systolicController, unit: "(mmHg)"),
+                  buildInput("Huyết áp tâm trương", diastolicController, unit: "(mmHg)"),
 
-            /// 🍬 Đường huyết
-            buildInput(
-              controller: bloodSugarController,
-              label: "Đường huyết",
-              unit: "mmol/L",
-              icon: Icons.bloodtype,
-            ),
+                  buildInput("Nhịp tim", heartRateController, unit: "(bpm)"),
 
-            /// 🧈 Mỡ máu
-            buildInput(
-              controller: cholesterolController,
-              label: "Mỡ máu",
-              unit: "mmol/L",
-              icon: Icons.opacity,
-            ),
+                  buildInput("Đường huyết", bloodSugarController, unit: "(mmol/L)"),
 
-            const SizedBox(height: 20),
+                  buildInput("Mỡ máu", cholesterolController, unit: "(mmol/L)"),
 
-            /// 🔥 BUTTON
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: handleSubmit,
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.all(14),
-                ),
-                child: const Text(
-                  "Lấy kết quả",
-                  style: TextStyle(fontSize: 16),
-                ),
+                  const SizedBox(height: 20),
+
+                  /// 🚀 BUTTON
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: calculateAndGo,
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text("Lấy kết quả"),
+                    ),
+                  ),
+                ],
               ),
             ),
-          ],
+          ),
         ),
       ),
     );
