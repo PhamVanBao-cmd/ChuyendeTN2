@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'result_screen.dart';
 
 class HealthInputScreen extends StatefulWidget {
@@ -9,6 +10,8 @@ class HealthInputScreen extends StatefulWidget {
 }
 
 class _HealthInputScreenState extends State<HealthInputScreen> {
+  final _formKey = GlobalKey<FormState>();
+
   final weightController = TextEditingController();
   final heightController = TextEditingController();
   final systolicController = TextEditingController();
@@ -17,26 +20,110 @@ class _HealthInputScreenState extends State<HealthInputScreen> {
   final bloodSugarController = TextEditingController();
   final cholesterolController = TextEditingController();
 
-  double bmi = 0;
+  /// 🔥 CHẶN CHỈ NHẬP SỐ
+  final numberOnly = FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'));
 
-  void calculateAndGo() {
-    double weight = double.tryParse(weightController.text) ?? 0;
-    double heightCm = double.tryParse(heightController.text) ?? 0;
+  /// 🔥 VALIDATE CHUẨN Y KHOA
+  String? validateRequired(String? v) {
+    if (v == null || v.trim().isEmpty) return "Không được để trống";
+    return null;
+  }
 
-    /// 👉 đổi cm -> m
-    double heightM = heightCm / 100;
+  String? validateWeight(String? v) {
+    if (validateRequired(v) != null) return validateRequired(v);
 
-    if (weight == 0 || heightM == 0) return;
+    double? w = double.tryParse(v!);
+    if (w == null) return "Sai định dạng";
 
-    bmi = weight / (heightM * heightM);
+    if (w < 30 || w > 250) return "30–250 kg";
+    return null;
+  }
 
+  String? validateHeight(String? v) {
+    if (validateRequired(v) != null) return validateRequired(v);
+
+    double? h = double.tryParse(v!);
+    if (h == null) return "Sai định dạng";
+
+    if (h < 120 || h > 220) return "120–220 cm";
+    return null;
+  }
+
+  String? validateBP(String? v) {
+    if (validateRequired(v) != null) return validateRequired(v);
+
+    int? x = int.tryParse(v!);
+    if (x == null) return "Sai định dạng";
+
+    if (x < 70 || x > 200) return "70–200 mmHg";
+    return null;
+  }
+
+  String? validateHeart(String? v) {
+    if (validateRequired(v) != null) return validateRequired(v);
+
+    int? hr = int.tryParse(v!);
+    if (hr == null) return "Sai định dạng";
+
+    if (hr < 40 || hr > 180) return "40–180 bpm";
+    return null;
+  }
+
+  String? validateSugar(String? v) {
+    if (validateRequired(v) != null) return validateRequired(v);
+
+    double? s = double.tryParse(v!);
+    if (s == null) return "Sai định dạng";
+
+    if (s < 60 || s > 300) return "60–300 mg/dL";
+    return null;
+  }
+
+  String? validateChol(String? v) {
+    if (validateRequired(v) != null) return validateRequired(v);
+
+    double? c = double.tryParse(v!);
+    if (c == null) return "Sai định dạng";
+
+    if (c < 100 || c > 400) return "100–400 mg/dL";
+    return null;
+  }
+
+  Widget input(String label, TextEditingController c, String? Function(String?) v) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: TextFormField(
+        controller: c,
+        keyboardType: TextInputType.number,
+        inputFormatters: [numberOnly], // 🔥 CHẶN CHỮ
+        decoration: InputDecoration(
+          labelText: label,
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+        validator: v,
+      ),
+    );
+  }
+
+  /// 🚀 SUBMIT
+  void submit() {
+    FocusScope.of(context).unfocus();
+
+    /// 🔥 validate toàn bộ form
+    if (!_formKey.currentState!.validate()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("❌ Vui lòng nhập đúng dữ liệu")),
+      );
+      return;
+    }
+
+    /// ✅ chỉ khi đúng mới qua Result
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => ResultScreen(
-          bmi: bmi,
-          weight: weight,
-          height: heightCm,
+          weight: double.parse(weightController.text),
+          height: double.parse(heightController.text),
           systolic: systolicController.text,
           diastolic: diastolicController.text,
           heartRate: heartRateController.text,
@@ -47,91 +134,31 @@ class _HealthInputScreenState extends State<HealthInputScreen> {
     );
   }
 
-  Widget buildInput(String label, TextEditingController controller,
-      {String unit = ""}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: TextField(
-        controller: controller,
-        keyboardType: TextInputType.number,
-        decoration: InputDecoration(
-          labelText: "$label $unit",
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    double screenWidth = MediaQuery.of(context).size.width;
-
     return Scaffold(
       appBar: AppBar(title: const Text("Nhập sức khỏe")),
-      body: Center(
-        child: Container(
-          width: screenWidth > 600 ? 400 : double.infinity, // 🔥 fix web
-          padding: const EdgeInsets.all(16),
-          child: SingleChildScrollView(
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    blurRadius: 10,
-                    color: Colors.black12,
-                  )
-                ],
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            children: [
+              input("Cân nặng (kg)", weightController, validateWeight),
+              input("Chiều cao (cm)", heightController, validateHeight),
+              input("Huyết áp tâm thu", systolicController, validateBP),
+              input("Huyết áp tâm trương", diastolicController, validateBP),
+              input("Nhịp tim (bpm)", heartRateController, validateHeart),
+              input("Đường huyết (mg/dL)", bloodSugarController, validateSugar),
+              input("Cholesterol (mg/dL)", cholesterolController, validateChol),
+
+              const SizedBox(height: 20),
+
+              ElevatedButton(
+                onPressed: submit,
+                child: const Text("Xem kết quả"),
               ),
-              child: Column(
-                children: [
-
-                  /// 📊 TITLE
-                  const Text(
-                    "Nhập thông tin sức khỏe",
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-
-                  const SizedBox(height: 20),
-
-                  buildInput("Cân nặng", weightController, unit: "(kg)"),
-                  buildInput("Chiều cao", heightController, unit: "(cm)"),
-
-                  buildInput("Huyết áp tâm thu", systolicController, unit: "(mmHg)"),
-                  buildInput("Huyết áp tâm trương", diastolicController, unit: "(mmHg)"),
-
-                  buildInput("Nhịp tim", heartRateController, unit: "(bpm)"),
-
-                  buildInput("Đường huyết", bloodSugarController, unit: "(mmol/L)"),
-
-                  buildInput("Mỡ máu", cholesterolController, unit: "(mmol/L)"),
-
-                  const SizedBox(height: 20),
-
-                  /// 🚀 BUTTON
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: calculateAndGo,
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: const Text("Lấy kết quả"),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            ],
           ),
         ),
       ),

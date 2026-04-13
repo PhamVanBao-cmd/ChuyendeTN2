@@ -1,29 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-
 import 'history_screen.dart';
 
 class ResultScreen extends StatefulWidget {
-  final double bmi;
   final double weight;
   final double height;
   final String systolic;
   final String diastolic;
   final String heartRate;
   final String bloodSugar;
-  final String cholesterol; // 🆕
+  final String cholesterol;
 
   const ResultScreen({
     super.key,
-    required this.bmi,
     required this.weight,
     required this.height,
     required this.systolic,
     required this.diastolic,
     required this.heartRate,
     required this.bloodSugar,
-    required this.cholesterol, // 🆕
+    required this.cholesterol,
   });
 
   @override
@@ -32,21 +29,30 @@ class ResultScreen extends StatefulWidget {
 
 class _ResultScreenState extends State<ResultScreen> {
 
+  double bmi = 0;
+
   @override
   void initState() {
     super.initState();
+    calculateBMI();
     saveData();
   }
 
-  /// 🔥 Lưu Firebase
+  void calculateBMI() {
+    double h = widget.height / 100;
+    bmi = widget.weight / (h * h);
+  }
+
   Future<void> saveData() async {
     final user = FirebaseAuth.instance.currentUser;
-
     if (user == null) return;
 
-    await FirebaseFirestore.instance.collection('health').add({
-      'userId': user.uid, // 🔥 BẮT BUỘC
-      'bmi': widget.bmi,
+    await FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .collection('health')
+        .add({
+      'bmi': bmi,
       'weight': widget.weight,
       'height': widget.height,
       'systolic': widget.systolic,
@@ -54,157 +60,82 @@ class _ResultScreenState extends State<ResultScreen> {
       'heartRate': widget.heartRate,
       'bloodSugar': widget.bloodSugar,
       'cholesterol': widget.cholesterol,
-      'time': Timestamp.now(), // 🔥 dùng time
+      'createdAt': Timestamp.now(),
     });
   }
 
-  /// 📊 BMI
   String getBMI() {
-    if (widget.bmi < 18.5) return "Thiếu cân 🔵";
-    if (widget.bmi < 25) return "Bình thường 🟢";
-    if (widget.bmi < 30) return "Thừa cân 🟠";
+    if (bmi < 18.5) return "Thiếu cân 🔵";
+    if (bmi < 25) return "Bình thường 🟢";
+    if (bmi < 30) return "Thừa cân 🟠";
     return "Béo phì 🔴";
   }
 
-  Color getBMIColor() {
-    if (widget.bmi < 18.5) return Colors.blue;
-    if (widget.bmi < 25) return Colors.green;
-    if (widget.bmi < 30) return Colors.orange;
-    return Colors.red;
-  }
-
-  /// ❤️ Huyết áp
-  String getBP() {
-    int sys = int.tryParse(widget.systolic) ?? 0;
-    int dia = int.tryParse(widget.diastolic) ?? 0;
-
-    if (sys >= 140 || dia >= 90) return "Cao 🔴";
-    if (sys < 90 || dia < 60) return "Thấp 🔵";
-    return "Bình thường 🟢";
-  }
-
-  /// 💓 Nhịp tim
-  String getHeart() {
-    int hr = int.tryParse(widget.heartRate) ?? 0;
-
-    if (hr > 100) return "Nhanh 🔴";
-    if (hr < 60) return "Chậm 🔵";
-    return "Bình thường 🟢";
-  }
-
-  /// 🍬 Đường huyết
   String getSugar() {
     double s = double.tryParse(widget.bloodSugar) ?? 0;
-
-    if (s > 7) return "Cao 🔴";
-    if (s < 4) return "Thấp 🔵";
+    if (s >= 126) return "Cao 🔴";
+    if (s < 70) return "Thấp 🔵";
     return "Bình thường 🟢";
   }
 
-  /// 🧈 Mỡ máu
   String getChol() {
     double c = double.tryParse(widget.cholesterol) ?? 0;
-
-    if (c > 6.2) return "Cao 🔴";
-    if (c < 3.9) return "Thấp 🔵";
+    if (c >= 240) return "Rất cao 🔴";
+    if (c >= 200) return "Cao 🟠";
     return "Bình thường 🟢";
   }
 
-  /// 🎨 UI row
-  Widget buildRow(String title, String value, String status) {
-    Color color = Colors.black;
+  String generateReport() {
+    List<String> warn = [];
 
-    if (status.contains("🔴")) color = Colors.red;
-    if (status.contains("🟢")) color = Colors.green;
-    if (status.contains("🔵")) color = Colors.blue;
-    if (status.contains("🟠")) color = Colors.orange;
+    if (bmi >= 30) warn.add("⚠️ Béo phì");
+    if ((int.tryParse(widget.systolic) ?? 0) >= 140) warn.add("⚠️ Huyết áp cao");
+    if ((int.tryParse(widget.heartRate) ?? 0) > 100) warn.add("⚠️ Tim nhanh");
+    if ((double.tryParse(widget.bloodSugar) ?? 0) >= 126) warn.add("⚠️ Tiểu đường");
+    if ((double.tryParse(widget.cholesterol) ?? 0) >= 240) warn.add("⚠️ Cholesterol cao");
 
-    return Container(
-      padding: const EdgeInsets.all(12),
-      margin: const EdgeInsets.symmetric(vertical: 6),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade100,
-        borderRadius: BorderRadius.circular(10),
-      ),
+    if (warn.isEmpty) return "✅ Sức khỏe tốt";
+    if (warn.length >= 3) return "🚨 NGUY HIỂM\n\n${warn.join("\n")}";
+
+    return warn.join("\n");
+  }
+
+  Widget row(String t, String v) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text("$title: $value"),
-          Text(
-            status,
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
-          ),
-        ],
+        children: [Text(t), Text(v)],
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final bp = getBP();
-    final hr = getHeart();
-    final sugar = getSugar();
-    final chol = getChol();
-
     return Scaffold(
-      appBar: AppBar(title: const Text("Kết quả sức khỏe")),
-      body: SingleChildScrollView(
+      appBar: AppBar(title: const Text("Kết quả")),
+      body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
 
-            /// 📊 BMI nổi bật
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: getBMIColor().withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Column(
-                children: [
-                  Text(
-                    "BMI: ${widget.bmi.toStringAsFixed(2)}",
-                    style: TextStyle(
-                      fontSize: 26,
-                      fontWeight: FontWeight.bold,
-                      color: getBMIColor(),
-                    ),
-                  ),
-                  Text(getBMI()),
-                ],
-              ),
-            ),
+            Text("BMI: ${bmi.toStringAsFixed(2)}",
+                style: const TextStyle(fontSize: 26)),
+            Text(getBMI()),
 
             const SizedBox(height: 20),
 
-            buildRow("Cân nặng", "${widget.weight} kg", ""),
-            buildRow("Chiều cao", "${widget.height} cm", ""),
+            row("Cân nặng", "${widget.weight} kg"),
+            row("Chiều cao", "${widget.height} cm"),
+            row("Đường huyết", getSugar()),
+            row("Cholesterol", getChol()),
 
-            buildRow(
-              "Huyết áp",
-              "${widget.systolic}/${widget.diastolic} mmHg",
-              bp,
-            ),
+            const SizedBox(height: 20),
 
-            buildRow(
-              "Nhịp tim",
-              "${widget.heartRate} bpm",
-              hr,
-            ),
-
-            buildRow(
-              "Đường huyết",
-              "${widget.bloodSugar} mmol/L",
-              sugar,
-            ),
-
-            buildRow(
-              "Mỡ máu",
-              "${widget.cholesterol} mmol/L",
-              chol,
+            Container(
+              padding: const EdgeInsets.all(16),
+              color: Colors.yellow.shade100,
+              child: Text(generateReport()),
             ),
 
             const SizedBox(height: 20),
