@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+
+import 'health_input_screen.dart';
 import 'history_screen.dart';
 
-class ResultScreen extends StatefulWidget {
+class ResultScreen extends StatelessWidget {
+  final double bmi;
   final double weight;
   final double height;
   final String systolic;
@@ -14,6 +17,7 @@ class ResultScreen extends StatefulWidget {
 
   const ResultScreen({
     super.key,
+    required this.bmi,
     required this.weight,
     required this.height,
     required this.systolic,
@@ -23,135 +27,214 @@ class ResultScreen extends StatefulWidget {
     required this.cholesterol,
   });
 
-  @override
-  State<ResultScreen> createState() => _ResultScreenState();
-}
-
-class _ResultScreenState extends State<ResultScreen> {
-
-  double bmi = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    calculateBMI();
-    saveData();
-  }
-
-  void calculateBMI() {
-    double h = widget.height / 100;
-    bmi = widget.weight / (h * h);
-  }
-
-  Future<void> saveData() async {
+  /// ================= SAVE + GO HISTORY =================
+  Future<void> saveData(BuildContext context) async {
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
 
-    await FirebaseFirestore.instance
-        .collection('users')
-        .doc(user.uid)
-        .collection('health')
-        .add({
-      'bmi': bmi,
-      'weight': widget.weight,
-      'height': widget.height,
-      'systolic': widget.systolic,
-      'diastolic': widget.diastolic,
-      'heartRate': widget.heartRate,
-      'bloodSugar': widget.bloodSugar,
-      'cholesterol': widget.cholesterol,
-      'createdAt': Timestamp.now(),
-    });
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("❌ Chưa đăng nhập")),
+      );
+      return;
+    }
+
+    try {
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .collection('health')
+          .add({
+        'bmi': bmi,
+        'weight': weight,
+        'height': height,
+        'systolic': systolic,
+        'diastolic': diastolic,
+        'heartRate': heartRate,
+        'bloodSugar': bloodSugar,
+        'cholesterol': cholesterol,
+        'createdAt': Timestamp.now(),
+      });
+
+      /// 🔥 CHUYỂN SANG LỊCH SỬ
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const HistoryScreen(),
+        ),
+      );
+
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("❌ Lỗi lưu: $e")),
+      );
+    }
   }
 
-  String getBMI() {
-    if (bmi < 18.5) return "Thiếu cân 🔵";
-    if (bmi < 25) return "Bình thường 🟢";
-    if (bmi < 30) return "Thừa cân 🟠";
-    return "Béo phì 🔴";
+  /// ================= BMI =================
+  String getStatus() {
+    if (bmi < 18.5) return "Thiếu cân";
+    if (bmi < 25) return "Bình thường";
+    if (bmi < 30) return "Thừa cân";
+    return "Béo phì";
   }
 
-  String getSugar() {
-    double s = double.tryParse(widget.bloodSugar) ?? 0;
-    if (s >= 126) return "Cao 🔴";
-    if (s < 70) return "Thấp 🔵";
-    return "Bình thường 🟢";
+  Color getColor() {
+    if (bmi < 18.5) return Colors.blue;
+    if (bmi < 25) return Colors.green;
+    if (bmi < 30) return Colors.orange;
+    return Colors.red;
   }
 
-  String getChol() {
-    double c = double.tryParse(widget.cholesterol) ?? 0;
-    if (c >= 240) return "Rất cao 🔴";
-    if (c >= 200) return "Cao 🟠";
-    return "Bình thường 🟢";
-  }
-
-  String generateReport() {
-    List<String> warn = [];
-
-    if (bmi >= 30) warn.add("⚠️ Béo phì");
-    if ((int.tryParse(widget.systolic) ?? 0) >= 140) warn.add("⚠️ Huyết áp cao");
-    if ((int.tryParse(widget.heartRate) ?? 0) > 100) warn.add("⚠️ Tim nhanh");
-    if ((double.tryParse(widget.bloodSugar) ?? 0) >= 126) warn.add("⚠️ Tiểu đường");
-    if ((double.tryParse(widget.cholesterol) ?? 0) >= 240) warn.add("⚠️ Cholesterol cao");
-
-    if (warn.isEmpty) return "✅ Sức khỏe tốt";
-    if (warn.length >= 3) return "🚨 NGUY HIỂM\n\n${warn.join("\n")}";
-
-    return warn.join("\n");
-  }
-
-  Widget row(String t, String v) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+  /// ================= CARD =================
+  Widget card(String title, String value, String unit) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      margin: const EdgeInsets.symmetric(vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(15),
+        boxShadow: [
+          BoxShadow(color: Colors.black12, blurRadius: 5)
+        ],
+      ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [Text(t), Text(v)],
+        children: [
+          Text(title),
+
+          Row(
+            children: [
+              Text(
+                value,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
+              const SizedBox(width: 4),
+              Text(
+                unit,
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey,
+                ),
+              ),
+            ],
+          )
+        ],
       ),
     );
   }
 
+  /// ================= UI =================
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Kết quả")),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
 
-            Text("BMI: ${bmi.toStringAsFixed(2)}",
-                style: const TextStyle(fontSize: 26)),
-            Text(getBMI()),
+      /// 🔙 BACK
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
 
-            const SizedBox(height: 20),
+      extendBodyBehindAppBar: true,
 
-            row("Cân nặng", "${widget.weight} kg"),
-            row("Chiều cao", "${widget.height} cm"),
-            row("Đường huyết", getSugar()),
-            row("Cholesterol", getChol()),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.deepPurple, Colors.blue],
+          ),
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
 
-            const SizedBox(height: 20),
-
-            Container(
-              padding: const EdgeInsets.all(16),
-              color: Colors.yellow.shade100,
-              child: Text(generateReport()),
-            ),
-
-            const SizedBox(height: 20),
-
-            ElevatedButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const HistoryScreen(),
+                /// 🔥 BMI CARD
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: getColor().withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(20),
                   ),
-                );
-              },
-              child: const Text("Xem lịch sử"),
-            )
-          ],
+                  child: Column(
+                    children: [
+                      Text(
+                        "BMI ${bmi.toStringAsFixed(2)}",
+                        style: TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          color: getColor(),
+                        ),
+                      ),
+                      Text(
+                        getStatus(),
+                        style: TextStyle(color: getColor()),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 20),
+
+                /// 🔥 DATA
+                card("Cân nặng", weight.toString(), "kg"),
+                card("Chiều cao", height.toString(), "cm"),
+                card("Huyết áp", "$systolic/$diastolic", "mmHg"),
+                card("Nhịp tim", heartRate, "bpm"),
+                card("Đường huyết", bloodSugar, "mg/dL"),
+                card("Cholesterol", cholesterol, "mg/dL"),
+
+                const Spacer(),
+
+                /// 🔥 BUTTONS
+                Row(
+                  children: [
+
+                    /// 🏠 HOME
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.pushAndRemoveUntil(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const HealthInputScreen(),
+                            ),
+                                (route) => false,
+                          );
+                        },
+                        icon: const Icon(Icons.home),
+                        label: const Text("Trang chủ"),
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.all(14),
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(width: 10),
+
+                    /// 💾 SAVE → HISTORY
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () => saveData(context),
+                        icon: const Icon(Icons.save),
+                        label: const Text("Lưu"),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green,
+                          padding: const EdgeInsets.all(14),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );

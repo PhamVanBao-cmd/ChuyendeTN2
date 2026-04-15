@@ -9,15 +9,12 @@ class HistoryScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
 
-    if (user == null) {
-      return const Scaffold(
-        body: Center(child: Text("Chưa đăng nhập")),
-      );
-    }
-
     return Scaffold(
       appBar: AppBar(title: const Text("Lịch sử sức khỏe")),
-      body: StreamBuilder<QuerySnapshot>(
+
+      body: user == null
+          ? const Center(child: Text("❌ Chưa đăng nhập"))
+          : StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
             .collection('users')
             .doc(user.uid)
@@ -26,39 +23,29 @@ class HistoryScreen extends StatelessWidget {
             .snapshots(),
         builder: (context, snapshot) {
 
-          if (snapshot.connectionState == ConnectionState.waiting) {
+          if (!snapshot.hasData) {
             return const Center(child: CircularProgressIndicator());
-          }
-
-          if (snapshot.hasError) {
-            return Center(child: Text("Lỗi: ${snapshot.error}"));
-          }
-
-          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-            return const Center(child: Text("Chưa có dữ liệu"));
           }
 
           final docs = snapshot.data!.docs;
 
+          if (docs.isEmpty) {
+            return const Center(child: Text("Chưa có dữ liệu"));
+          }
+
           return ListView.builder(
             itemCount: docs.length,
-            itemBuilder: (context, index) {
-              final data = docs[index].data() as Map<String, dynamic>;
+            itemBuilder: (_, i) {
+              final d = docs[i];
 
               return Card(
                 margin: const EdgeInsets.all(10),
                 child: ListTile(
-                  title: Text("BMI: ${data['bmi']}"),
-                  subtitle: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text("Cân nặng: ${data['weight']} kg"),
-                      Text("Chiều cao: ${data['height']} cm"),
-                      Text("Huyết áp: ${data['systolic']}/${data['diastolic']}"),
-                      Text("Nhịp tim: ${data['heartRate']}"),
-                      Text("Đường huyết: ${data['bloodSugar']}"),
-                      Text("Mỡ máu: ${data['cholesterol']}"),
-                    ],
+                  title: Text("BMI: ${d['bmi'].toStringAsFixed(2)}"),
+                  subtitle: Text(
+                    "HA: ${d['systolic']}/${d['diastolic']} mmHg\n"
+                        "Tim: ${d['heartRate']} bpm\n"
+                        "Đường: ${d['bloodSugar']} mg/dL",
                   ),
                 ),
               );

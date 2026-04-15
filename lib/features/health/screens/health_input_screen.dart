@@ -1,5 +1,11 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:http/http.dart' as http;
+import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
+
 import 'result_screen.dart';
 
 class HealthInputScreen extends StatefulWidget {
@@ -9,127 +15,187 @@ class HealthInputScreen extends StatefulWidget {
   State<HealthInputScreen> createState() => _HealthInputScreenState();
 }
 
-class _HealthInputScreenState extends State<HealthInputScreen> {
+class _HealthInputScreenState extends State<HealthInputScreen>
+    with SingleTickerProviderStateMixin {
+
   final _formKey = GlobalKey<FormState>();
 
-  final weightController = TextEditingController();
-  final heightController = TextEditingController();
-  final systolicController = TextEditingController();
-  final diastolicController = TextEditingController();
-  final heartRateController = TextEditingController();
-  final bloodSugarController = TextEditingController();
-  final cholesterolController = TextEditingController();
+  final weight = TextEditingController();
+  final height = TextEditingController();
+  final sys = TextEditingController();
+  final dia = TextEditingController();
+  final hr = TextEditingController();
+  final sugar = TextEditingController();
+  final chol = TextEditingController();
 
-  /// 🔥 CHẶN CHỈ NHẬP SỐ
-  final numberOnly = FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'));
+  bool isLoading = false;
 
-  /// 🔥 VALIDATE CHUẨN Y KHOA
-  String? validateRequired(String? v) {
-    if (v == null || v.trim().isEmpty) return "Không được để trống";
+  late AnimationController _anim;
+  late Animation<double> _fade;
+
+  @override
+  void initState() {
+    super.initState();
+    _anim = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+    );
+    _fade = CurvedAnimation(parent: _anim, curve: Curves.easeIn);
+    _anim.forward();
+  }
+
+  @override
+  void dispose() {
+    _anim.dispose();
+    super.dispose();
+  }
+
+  /// ================= RESET (LOAD LẠI TRANG) =================
+  void reset() {
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const HealthInputScreen(),
+      ),
+    );
+  }
+
+  /// SCAN
+  Future<void> scanOCR() async {
+    final picker = ImagePicker();
+    final image = await picker.pickImage(
+      source: kIsWeb ? ImageSource.gallery : ImageSource.camera,
+    );
+
+    if (image == null) return;
+
+    setState(() => isLoading = true);
+
+    if (kIsWeb) {
+      await scanWebOCR(image);
+    } else {
+      await scanMobileOCR(image);
+    }
+
+    setState(() => isLoading = false);
+  }
+
+  /// MOBILE OCR
+  Future<void> scanMobileOCR(XFile image) async {
+    final inputImage = InputImage.fromFilePath(image.path);
+    final recognizer = TextRecognizer();
+
+    final result = await recognizer.processImage(inputImage);
+    extract(result.text.toLowerCase());
+
+    recognizer.close();
+  }
+
+  /// WEB OCR
+  Future<void> scanWebOCR(XFile image) async {
+    final bytes = await image.readAsBytes();
+
+    var request = http.MultipartRequest(
+      'POST',
+      Uri.parse('https://api.ocr.space/parse/image'),
+    );
+
+    request.files.add(http.MultipartFile.fromBytes(
+      'file',
+      bytes,
+      filename: "scan.png",
+    ));
+
+    request.fields['apikey'] = 'helloworld';
+
+    var res = await request.send();
+    var body = await res.stream.bytesToString();
+
+    final data = jsonDecode(body);
+    String text =
+        data['ParsedResults']?[0]?['ParsedText']?.toLowerCase() ?? "";
+
+    extract(text);
+  }
+
+  /// EXTRACT NUMBER
+  void extract(String text) {
+    final numbers =
+    RegExp(r'\d+').allMatches(text).map((e) => e.group(0)!).toList();
+
+    if (numbers.length < 5) return;
+
+    weight.text = numbers[0];
+    height.text = numbers[1];
+    sys.text = numbers[2];
+    dia.text = numbers[3];
+    hr.text = numbers[4];
+    sugar.text = numbers[5];
+
+    if (numbers.length > 6) {
+      chol.text = numbers[6];
+    }
+
+    /// FIX huyết áp
+    if (int.parse(sys.text) < int.parse(dia.text)) {
+      final t = sys.text;
+      sys.text = dia.text;
+      dia.text = t;
+    }
+
+    setState(() {});
+  }
+
+  /// ================= VALIDATE =================
+  String? v(String? x, int min, int max) {
+    if (x == null || x.isEmpty) return "Nhập";
+    int? n = int.tryParse(x);
+    if (n == null || n < min || n > max) return "$min-$max";
     return null;
   }
 
-  String? validateWeight(String? v) {
-    if (validateRequired(v) != null) return validateRequired(v);
+  /// ================= SUBMIT =================
+  void submit() {
+    if (!_formKey.currentState!.validate()) return;
 
-    double? w = double.tryParse(v!);
-    if (w == null) return "Sai định dạng";
+    double w = double.parse(weight.text);
+    double h = double.parse(height.text);
+    double bmi = w / ((h / 100) * (h / 100));
 
-    if (w < 30 || w > 250) return "30–250 kg";
-    return null;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ResultScreen(
+          bmi: bmi,
+          weight: w,
+          height: h,
+          systolic: sys.text,
+          diastolic: dia.text,
+          heartRate: hr.text,
+          bloodSugar: sugar.text,
+          cholesterol: chol.text,
+        ),
+      ),
+    );
   }
 
-  String? validateHeight(String? v) {
-    if (validateRequired(v) != null) return validateRequired(v);
-
-    double? h = double.tryParse(v!);
-    if (h == null) return "Sai định dạng";
-
-    if (h < 120 || h > 220) return "120–220 cm";
-    return null;
-  }
-
-  String? validateBP(String? v) {
-    if (validateRequired(v) != null) return validateRequired(v);
-
-    int? x = int.tryParse(v!);
-    if (x == null) return "Sai định dạng";
-
-    if (x < 70 || x > 200) return "70–200 mmHg";
-    return null;
-  }
-
-  String? validateHeart(String? v) {
-    if (validateRequired(v) != null) return validateRequired(v);
-
-    int? hr = int.tryParse(v!);
-    if (hr == null) return "Sai định dạng";
-
-    if (hr < 40 || hr > 180) return "40–180 bpm";
-    return null;
-  }
-
-  String? validateSugar(String? v) {
-    if (validateRequired(v) != null) return validateRequired(v);
-
-    double? s = double.tryParse(v!);
-    if (s == null) return "Sai định dạng";
-
-    if (s < 60 || s > 300) return "60–300 mg/dL";
-    return null;
-  }
-
-  String? validateChol(String? v) {
-    if (validateRequired(v) != null) return validateRequired(v);
-
-    double? c = double.tryParse(v!);
-    if (c == null) return "Sai định dạng";
-
-    if (c < 100 || c > 400) return "100–400 mg/dL";
-    return null;
-  }
-
-  Widget input(String label, TextEditingController c, String? Function(String?) v) {
+  Widget input(String t, IconData i, TextEditingController c, int min, int max) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: TextFormField(
         controller: c,
         keyboardType: TextInputType.number,
-        inputFormatters: [numberOnly], // 🔥 CHẶN CHỮ
+        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
         decoration: InputDecoration(
-          labelText: label,
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          prefixIcon: Icon(i, color: Colors.deepPurple),
+          labelText: t,
+          filled: true,
+          fillColor: Colors.white,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(18),
+          ),
         ),
-        validator: v,
-      ),
-    );
-  }
-
-  /// 🚀 SUBMIT
-  void submit() {
-    FocusScope.of(context).unfocus();
-
-    /// 🔥 validate toàn bộ form
-    if (!_formKey.currentState!.validate()) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("❌ Vui lòng nhập đúng dữ liệu")),
-      );
-      return;
-    }
-
-    /// ✅ chỉ khi đúng mới qua Result
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => ResultScreen(
-          weight: double.parse(weightController.text),
-          height: double.parse(heightController.text),
-          systolic: systolicController.text,
-          diastolic: diastolicController.text,
-          heartRate: heartRateController.text,
-          bloodSugar: bloodSugarController.text,
-          cholesterol: cholesterolController.text,
-        ),
+        validator: (v) => this.v(v, min, max),
       ),
     );
   }
@@ -137,30 +203,96 @@ class _HealthInputScreenState extends State<HealthInputScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Nhập sức khỏe")),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              input("Cân nặng (kg)", weightController, validateWeight),
-              input("Chiều cao (cm)", heightController, validateHeight),
-              input("Huyết áp tâm thu", systolicController, validateBP),
-              input("Huyết áp tâm trương", diastolicController, validateBP),
-              input("Nhịp tim (bpm)", heartRateController, validateHeart),
-              input("Đường huyết (mg/dL)", bloodSugarController, validateSugar),
-              input("Cholesterol (mg/dL)", cholesterolController, validateChol),
 
-              const SizedBox(height: 20),
-
-              ElevatedButton(
-                onPressed: submit,
-                child: const Text("Xem kết quả"),
-              ),
-            ],
-          ),
+      /// 🔥 APPBAR ICON
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => Navigator.pop(context),
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh, color: Colors.white),
+            onPressed: reset,
+          ),
+        ],
+      ),
+
+      extendBodyBehindAppBar: true,
+
+      body: Stack(
+        children: [
+
+          /// BG
+          Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Color(0xFF6A11CB), Color(0xFF2575FC)],
+              ),
+            ),
+          ),
+
+          /// FORM
+          Center(
+            child: FadeTransition(
+              opacity: _fade,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 420),
+                child: Card(
+                  elevation: 12,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(25),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Form(
+                      key: _formKey,
+                      child: ListView(
+                        shrinkWrap: true,
+                        children: [
+
+                          const Text("Health Check",
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold)),
+
+                          const SizedBox(height: 10),
+
+                          ElevatedButton.icon(
+                            onPressed: scanOCR,
+                            icon: const Icon(Icons.camera_alt),
+                            label: const Text("Scan ảnh"),
+                          ),
+
+                          input("Cân nặng (kg)", Icons.monitor_weight, weight, 30, 250),
+                          input("Chiều cao (cm)", Icons.height, height, 120, 220),
+                          input("Tâm thu", Icons.favorite, sys, 70, 200),
+                          input("Tâm trương", Icons.favorite_border, dia, 40, 130),
+                          input("Nhịp tim", Icons.monitor_heart, hr, 40, 180),
+                          input("Đường huyết (mg/dL)", Icons.bloodtype, sugar, 60, 300),
+                          input("Cholesterol (mg/dL)", Icons.opacity, chol, 100, 400),
+
+                          const SizedBox(height: 20),
+
+                          ElevatedButton(
+                            onPressed: submit,
+                            child: const Text("Xem kết quả"),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+          if (isLoading)
+            const Center(child: CircularProgressIndicator())
+        ],
       ),
     );
   }
