@@ -47,20 +47,24 @@ class ResultScreen extends StatelessWidget {
         'bmi': bmi,
         'weight': weight,
         'height': height,
-        'systolic': systolic,
-        'diastolic': diastolic,
-        'heartRate': heartRate,
-        'bloodSugar': bloodSugar,
-        'cholesterol': cholesterol,
+
+        /// 🔥 CHUYỂN SANG SỐ (QUAN TRỌNG)
+        'systolic': int.tryParse(systolic) ?? 0,
+        'diastolic': int.tryParse(diastolic) ?? 0,
+        'heartRate': int.tryParse(heartRate) ?? 0,
+        'bloodSugar': double.tryParse(bloodSugar) ?? 0,
+        'cholesterol': double.tryParse(cholesterol) ?? 0,
+
         'createdAt': Timestamp.now(),
       });
 
-      /// 🔥 CHUYỂN SANG LỊCH SỬ
-      Navigator.pushReplacement(
+      /// ✅ CHUYỂN SANG HISTORY (ĐÚNG FLOW)
+      Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(
           builder: (_) => const HistoryScreen(),
         ),
+            (route) => false,
       );
 
     } catch (e) {
@@ -93,7 +97,7 @@ class ResultScreen extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(15),
-        boxShadow: [
+        boxShadow: const [
           BoxShadow(color: Colors.black12, blurRadius: 5)
         ],
       ),
@@ -101,7 +105,6 @@ class ResultScreen extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(title),
-
           Row(
             children: [
               Text(
@@ -210,15 +213,12 @@ class ResultScreen extends StatelessWidget {
                         },
                         icon: const Icon(Icons.home),
                         label: const Text("Trang chủ"),
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.all(14),
-                        ),
                       ),
                     ),
 
                     const SizedBox(width: 10),
 
-                    /// 💾 SAVE → HISTORY
+                    /// 💾 SAVE
                     Expanded(
                       child: ElevatedButton.icon(
                         onPressed: () => saveData(context),
@@ -226,7 +226,6 @@ class ResultScreen extends StatelessWidget {
                         label: const Text("Lưu"),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.green,
-                          padding: const EdgeInsets.all(14),
                         ),
                       ),
                     ),

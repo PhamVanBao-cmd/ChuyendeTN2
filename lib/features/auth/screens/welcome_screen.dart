@@ -49,7 +49,7 @@ class WelcomeScreen extends StatelessWidget {
                   ),
                 );
               },
-              child: const Text("Đăng nhập"),
+              child: const Text("Bắt Đầu"),
             ),
 
             const SizedBox(height: 15),
