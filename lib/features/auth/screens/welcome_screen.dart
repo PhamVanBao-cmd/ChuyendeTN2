@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import 'login_screen.dart';
-import 'register_screen.dart';
 
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key});
@@ -54,25 +53,6 @@ class WelcomeScreen extends StatelessWidget {
             ),
 
             const SizedBox(height: 15),
-
-            /// 🆕 REGISTER
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.transparent,
-                side: const BorderSide(color: Colors.white),
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 40, vertical: 14),
-              ),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const RegisterScreen(),
-                  ),
-                );
-              },
-              child: const Text("Đăng ký"),
-            ),
           ],
         ),
       ),
