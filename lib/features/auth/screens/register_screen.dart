@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -17,25 +18,40 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool obscure1 = true;
   bool obscure2 = true;
 
+  /// 🔥 CHẶN KÝ TỰ (chỉ cho chữ + số + @)
+  final passwordFormatter =
+  FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9@]'));
+
   Future<void> register() async {
-    if (email.text.isEmpty || password.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("❌ Nhập đầy đủ thông tin")),
-      );
+    String pass = password.text;
+
+    /// ❌ rỗng
+    if (email.text.isEmpty || pass.isEmpty) {
+      showMsg("❌ Nhập đầy đủ thông tin");
       return;
     }
 
-    if (password.text.length < 6) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("❌ Mật khẩu ≥ 6 ký tự")),
-      );
+    /// ❌ độ dài
+    if (pass.length < 6) {
+      showMsg("❌ Mật khẩu ≥ 6 ký tự");
       return;
     }
 
-    if (password.text != confirm.text) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("❌ Mật khẩu không khớp")),
-      );
+    /// ❌ ký tự sai
+    if (!RegExp(r'^[a-zA-Z0-9@]+$').hasMatch(pass)) {
+      showMsg("❌ Chỉ dùng chữ, số và @");
+      return;
+    }
+
+    /// ❌ chưa có chữ hoa + số
+    if (!RegExp(r'^(?=.*[A-Z])(?=.*[0-9])').hasMatch(pass)) {
+      showMsg("❌ Phải có chữ HOA và số");
+      return;
+    }
+
+    /// ❌ không khớp
+    if (pass != confirm.text) {
+      showMsg("❌ Mật khẩu không khớp");
       return;
     }
 
@@ -44,21 +60,23 @@ class _RegisterScreenState extends State<RegisterScreen> {
     try {
       await FirebaseAuth.instance.createUserWithEmailAndPassword(
         email: email.text.trim(),
-        password: password.text.trim(),
+        password: pass,
       );
 
       Navigator.pop(context);
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("✅ Đăng ký thành công")),
-      );
+      showMsg("✅ Đăng ký thành công");
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("❌ Lỗi: $e")),
-      );
+      showMsg("❌ Lỗi: $e");
     }
 
     setState(() => loading = false);
+  }
+
+  void showMsg(String msg) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(msg)),
+    );
   }
 
   @override
@@ -137,6 +155,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       TextField(
                         controller: password,
                         obscureText: obscure1,
+                        inputFormatters: [passwordFormatter], // 🔥 CHẶN
                         decoration: InputDecoration(
                           labelText: "Mật khẩu",
                           prefixIcon: const Icon(Icons.lock),
@@ -162,6 +181,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       TextField(
                         controller: confirm,
                         obscureText: obscure2,
+                        inputFormatters: [passwordFormatter], // 🔥 CHẶN
                         decoration: InputDecoration(
                           labelText: "Xác nhận mật khẩu",
                           prefixIcon: const Icon(Icons.lock_outline),
@@ -183,7 +203,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                       const SizedBox(height: 20),
 
-                      /// REGISTER BUTTON
+                      /// BUTTON
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
