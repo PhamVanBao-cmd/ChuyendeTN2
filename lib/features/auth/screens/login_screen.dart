@@ -14,11 +14,14 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
 
   final emailController = TextEditingController();
+
   final passwordController = TextEditingController();
 
   bool obscure = true;
+
   bool isLoading = false;
 
+  /// ================= LOGIN =================
   Future<void> login() async {
 
     if (emailController.text.trim().isEmpty ||
@@ -26,18 +29,23 @@ class _LoginScreenState extends State<LoginScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text("Vui lòng nhập đầy đủ thông tin"),
+          content: Text(
+            "Vui lòng nhập đầy đủ thông tin",
+          ),
         ),
       );
 
       return;
     }
 
-    setState(() => isLoading = true);
+    setState(() {
+      isLoading = true;
+    });
 
     try {
 
-      await FirebaseAuth.instance.signInWithEmailAndPassword(
+      await FirebaseAuth.instance
+          .signInWithEmailAndPassword(
         email: emailController.text.trim(),
         password: passwordController.text.trim(),
       );
@@ -46,8 +54,10 @@ class _LoginScreenState extends State<LoginScreen> {
 
       Navigator.pushReplacement(
         context,
+
         MaterialPageRoute(
-          builder: (_) => const WelcomeAfterLoginScreen(),
+          builder: (_) =>
+          const WelcomeAfterLoginScreen(),
         ),
       );
 
@@ -68,17 +78,35 @@ class _LoginScreenState extends State<LoginScreen> {
       }
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(msg)),
+        SnackBar(
+          content: Text(msg),
+        ),
       );
 
     } catch (e) {
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Lỗi: $e")),
+        SnackBar(
+          content: Text("Lỗi: $e"),
+        ),
       );
     }
 
-    setState(() => isLoading = false);
+    if (mounted) {
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+
+    emailController.dispose();
+
+    passwordController.dispose();
+
+    super.dispose();
   }
 
   @override
@@ -94,6 +122,7 @@ class _LoginScreenState extends State<LoginScreen> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
+
             colors: [
               Color(0xFF6A11CB),
               Color(0xFF2575FC),
@@ -109,21 +138,28 @@ class _LoginScreenState extends State<LoginScreen> {
 
               child: ConstrainedBox(
 
-                constraints: const BoxConstraints(maxWidth: 420),
+                constraints:
+                const BoxConstraints(
+                  maxWidth: 420,
+                ),
 
                 child: Padding(
 
-                  padding: const EdgeInsets.all(24),
+                  padding:
+                  const EdgeInsets.all(24),
 
                   child: Column(
                     children: [
 
-                      /// TOP ICON
+                      /// ================= TOP ICON =================
                       Container(
-                        padding: const EdgeInsets.all(22),
+                        padding:
+                        const EdgeInsets.all(22),
 
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.15),
+                          color: Colors.white
+                              .withOpacity(0.15),
+
                           shape: BoxShape.circle,
                         ),
 
@@ -136,12 +172,15 @@ class _LoginScreenState extends State<LoginScreen> {
 
                       const SizedBox(height: 25),
 
+                      /// ================= TITLE =================
                       const Text(
                         "Chào mừng trở lại",
+
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 30,
-                          fontWeight: FontWeight.bold,
+                          fontWeight:
+                          FontWeight.bold,
                         ),
                       ),
 
@@ -149,6 +188,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                       const Text(
                         "Đăng nhập để tiếp tục",
+
                         style: TextStyle(
                           color: Colors.white70,
                           fontSize: 16,
@@ -157,14 +197,20 @@ class _LoginScreenState extends State<LoginScreen> {
 
                       const SizedBox(height: 35),
 
-                      /// CARD
+                      /// ================= LOGIN CARD =================
                       Container(
 
-                        padding: const EdgeInsets.all(24),
+                        padding:
+                        const EdgeInsets.all(24),
 
                         decoration: BoxDecoration(
                           color: Colors.white,
-                          borderRadius: BorderRadius.circular(30),
+
+                          borderRadius:
+                          BorderRadius.circular(
+                            30,
+                          ),
+
                           boxShadow: const [
                             BoxShadow(
                               color: Colors.black26,
@@ -176,72 +222,137 @@ class _LoginScreenState extends State<LoginScreen> {
                         child: Column(
                           children: [
 
+                            /// ================= EMAIL =================
                             TextField(
-                              controller: emailController,
+                              controller:
+                              emailController,
 
-                              decoration: InputDecoration(
-                                labelText: "Email",
+                              keyboardType:
+                              TextInputType
+                                  .emailAddress,
 
-                                prefixIcon: const Icon(Icons.email),
+                              textInputAction:
+                              TextInputAction.next,
 
-                                border: OutlineInputBorder(
+                              decoration:
+                              InputDecoration(
+                                labelText:
+                                "Email",
+
+                                prefixIcon:
+                                const Icon(
+                                  Icons.email,
+                                ),
+
+                                border:
+                                OutlineInputBorder(
                                   borderRadius:
-                                  BorderRadius.circular(16),
+                                  BorderRadius
+                                      .circular(
+                                    16,
+                                  ),
                                 ),
                               ),
                             ),
 
-                            const SizedBox(height: 18),
+                            const SizedBox(
+                              height: 18,
+                            ),
 
+                            /// ================= PASSWORD =================
                             TextField(
-                              controller: passwordController,
+                              controller:
+                              passwordController,
+
                               obscureText: obscure,
 
-                              decoration: InputDecoration(
-                                labelText: "Mật khẩu",
+                              textInputAction:
+                              TextInputAction.done,
 
-                                prefixIcon: const Icon(Icons.lock),
+                              /// 🔥 ENTER TO LOGIN
+                              onSubmitted: (_) {
+                                if (!isLoading) {
+                                  login();
+                                }
+                              },
 
-                                suffixIcon: IconButton(
+                              decoration:
+                              InputDecoration(
+                                labelText:
+                                "Mật khẩu",
+
+                                prefixIcon:
+                                const Icon(
+                                  Icons.lock,
+                                ),
+
+                                suffixIcon:
+                                IconButton(
                                   icon: Icon(
                                     obscure
-                                        ? Icons.visibility
-                                        : Icons.visibility_off,
+                                        ? Icons
+                                        .visibility
+                                        : Icons
+                                        .visibility_off,
                                   ),
 
                                   onPressed: () {
                                     setState(() {
-                                      obscure = !obscure;
+                                      obscure =
+                                      !obscure;
                                     });
                                   },
                                 ),
 
-                                border: OutlineInputBorder(
+                                border:
+                                OutlineInputBorder(
                                   borderRadius:
-                                  BorderRadius.circular(16),
+                                  BorderRadius
+                                      .circular(
+                                    16,
+                                  ),
                                 ),
                               ),
                             ),
 
-                            const SizedBox(height: 24),
+                            const SizedBox(
+                              height: 24,
+                            ),
 
+                            /// ================= LOGIN BUTTON =================
                             SizedBox(
-                              width: double.infinity,
+                              width:
+                              double.infinity,
 
-                              child: ElevatedButton(
+                              child:
+                              ElevatedButton(
                                 onPressed:
-                                isLoading ? null : login,
+                                isLoading
+                                    ? null
+                                    : login,
 
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.blue,
-                                  foregroundColor: Colors.white,
+                                style:
+                                ElevatedButton
+                                    .styleFrom(
+                                  backgroundColor:
+                                  Colors.blue,
+
+                                  foregroundColor:
+                                  Colors.white,
+
                                   padding:
-                                  const EdgeInsets.symmetric(
-                                    vertical: 16,
+                                  const EdgeInsets
+                                      .symmetric(
+                                    vertical:
+                                    16,
                                   ),
-                                  shape: RoundedRectangleBorder(
+
+                                  shape:
+                                  RoundedRectangleBorder(
                                     borderRadius:
-                                    BorderRadius.circular(16),
+                                    BorderRadius.circular(
+                                      16,
+                                    ),
                                   ),
                                 ),
 
@@ -249,27 +360,38 @@ class _LoginScreenState extends State<LoginScreen> {
                                     ? const SizedBox(
                                   width: 24,
                                   height: 24,
+
                                   child:
                                   CircularProgressIndicator(
-                                    color: Colors.white,
-                                    strokeWidth: 2,
+                                    color:
+                                    Colors.white,
+                                    strokeWidth:
+                                    2,
                                   ),
                                 )
                                     : const Text(
                                   "Đăng nhập",
-                                  style: TextStyle(
-                                    fontSize: 16,
+
+                                  style:
+                                  TextStyle(
+                                    fontSize:
+                                    16,
                                   ),
                                 ),
                               ),
                             ),
 
-                            const SizedBox(height: 12),
+                            const SizedBox(
+                              height: 12,
+                            ),
 
+                            /// ================= REGISTER =================
                             TextButton(
                               onPressed: () {
+
                                 Navigator.push(
                                   context,
+
                                   MaterialPageRoute(
                                     builder: (_) =>
                                     const RegisterScreen(),

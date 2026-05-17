@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:fl_chart/fl_chart.dart';
 
 import '../../dashboard/screens/dashboard_screen.dart';
 
@@ -108,7 +107,7 @@ class HistoryScreen extends StatelessWidget {
 
                   return GestureDetector(
 
-                    /// 🔥 CLICK XEM DETAIL
+                    /// ================= DETAIL =================
                     onTap: () {
                       showModalBottomSheet(
                         context: context,
@@ -134,11 +133,12 @@ class HistoryScreen extends StatelessWidget {
 
                                 children: [
 
-                                  /// 🔥 HANDLE
+                                  /// HANDLE
                                   Center(
                                     child: Container(
                                       width: 60,
                                       height: 6,
+
                                       decoration: BoxDecoration(
                                         color: Colors.grey.shade300,
                                         borderRadius:
@@ -152,6 +152,7 @@ class HistoryScreen extends StatelessWidget {
                                   /// TITLE
                                   const Text(
                                     "Chi tiết lần đo",
+
                                     style: TextStyle(
                                       fontSize: 24,
                                       fontWeight: FontWeight.bold,
@@ -214,63 +215,79 @@ class HistoryScreen extends StatelessWidget {
 
                                   const SizedBox(height: 25),
 
-                                  /// 🔥 MINI CHART
-                                  SizedBox(
-                                    height: 220,
+                                  /// ================= HEALTH SCORE =================
+                                  Container(
+                                    width: double.infinity,
+                                    padding: const EdgeInsets.all(20),
 
-                                    child: LineChart(
-                                      LineChartData(
+                                    decoration: BoxDecoration(
+                                      color: Colors.grey.shade100,
+                                      borderRadius:
+                                      BorderRadius.circular(25),
+                                    ),
 
-                                        minY: 0,
+                                    child: Column(
+                                      crossAxisAlignment:
+                                      CrossAxisAlignment.start,
 
-                                        gridData:
-                                        FlGridData(show: true),
+                                      children: [
 
-                                        borderData:
-                                        FlBorderData(show: false),
+                                        const Text(
+                                          "Đánh giá sức khỏe",
 
-                                        titlesData: FlTitlesData(
-                                          leftTitles: AxisTitles(
-                                            sideTitles:
-                                            SideTitles(
-                                              showTitles: true,
-                                            ),
-                                          ),
-
-                                          bottomTitles:
-                                          AxisTitles(
-                                            sideTitles:
-                                            SideTitles(
-                                              showTitles: true,
-                                            ),
+                                          style: TextStyle(
+                                            fontSize: 18,
+                                            fontWeight:
+                                            FontWeight.bold,
                                           ),
                                         ),
 
-                                        lineBarsData: [
+                                        const SizedBox(height: 20),
 
-                                          /// BMI
-                                          LineChartBarData(
-                                            spots: [
-                                              FlSpot(
-                                                  0,
-                                                  bmi),
-                                            ],
+                                        healthScoreItem(
+                                          "BMI",
+                                          bmi < 25 ? 90 : 65,
+                                          getBMIColor(bmi),
+                                        ),
 
-                                            isCurved: true,
-                                            barWidth: 4,
-                                            dotData:
-                                            FlDotData(
-                                              show: true,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
+                                        const SizedBox(height: 15),
+
+                                        healthScoreItem(
+                                          "Huyết áp",
+                                          sys < 120 ? 95 : 70,
+                                          Colors.red,
+                                        ),
+
+                                        const SizedBox(height: 15),
+
+                                        healthScoreItem(
+                                          "Nhịp tim",
+                                          hr <= 100 ? 92 : 60,
+                                          Colors.pink,
+                                        ),
+
+                                        const SizedBox(height: 15),
+
+                                        healthScoreItem(
+                                          "Đường huyết",
+                                          sugar < 140 ? 90 : 55,
+                                          Colors.deepPurple,
+                                        ),
+
+                                        const SizedBox(height: 15),
+
+                                        healthScoreItem(
+                                          "Cholesterol",
+                                          chol < 200 ? 88 : 60,
+                                          Colors.cyan,
+                                        ),
+                                      ],
                                     ),
                                   ),
 
                                   const SizedBox(height: 20),
 
-                                  /// DETAIL INFO
+                                  /// ================= DETAIL INFO =================
                                   detailTile(
                                     Icons.monitor_weight,
                                     "Cân nặng",
@@ -315,7 +332,7 @@ class HistoryScreen extends StatelessWidget {
 
                                   const SizedBox(height: 20),
 
-                                  /// DATE
+                                  /// ================= DATE =================
                                   Container(
                                     width: double.infinity,
                                     padding:
@@ -360,6 +377,7 @@ class HistoryScreen extends StatelessWidget {
                       );
                     },
 
+                    /// ================= CARD =================
                     child: Container(
                       margin: const EdgeInsets.only(bottom: 16),
 
@@ -393,6 +411,7 @@ class HistoryScreen extends StatelessWidget {
 
                             decoration: BoxDecoration(
                               color: Colors.white,
+
                               borderRadius:
                               BorderRadius.circular(18),
                             ),
@@ -465,6 +484,60 @@ class HistoryScreen extends StatelessWidget {
     );
   }
 
+  /// ================= SCORE ITEM =================
+  Widget healthScoreItem(
+      String title,
+      int score,
+      Color color,
+      ) {
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+
+      children: [
+
+        Row(
+          mainAxisAlignment:
+          MainAxisAlignment.spaceBetween,
+
+          children: [
+
+            Text(
+              title,
+
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+
+            Text(
+              "$score/100",
+
+              style: TextStyle(
+                color: color,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+
+        const SizedBox(height: 8),
+
+        ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+
+          child: LinearProgressIndicator(
+            value: score / 100,
+            minHeight: 10,
+            backgroundColor: Colors.grey.shade300,
+            valueColor:
+            AlwaysStoppedAnimation(color),
+          ),
+        ),
+      ],
+    );
+  }
+
   /// ================= DETAIL TILE =================
   Widget detailTile(
       IconData icon,
@@ -472,6 +545,7 @@ class HistoryScreen extends StatelessWidget {
       String value,
       Color color,
       ) {
+
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
 
@@ -486,7 +560,8 @@ class HistoryScreen extends StatelessWidget {
         children: [
 
           CircleAvatar(
-            backgroundColor: color.withOpacity(0.15),
+            backgroundColor:
+            color.withOpacity(0.15),
 
             child: Icon(
               icon,
@@ -499,6 +574,7 @@ class HistoryScreen extends StatelessWidget {
           Expanded(
             child: Text(
               title,
+
               style: const TextStyle(
                 fontWeight: FontWeight.w600,
               ),
@@ -507,6 +583,7 @@ class HistoryScreen extends StatelessWidget {
 
           Text(
             value,
+
             style: const TextStyle(
               fontWeight: FontWeight.bold,
             ),
