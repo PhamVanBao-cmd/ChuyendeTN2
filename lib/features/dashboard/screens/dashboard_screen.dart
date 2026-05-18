@@ -7,6 +7,10 @@ import '../../health/screens/health_input_screen.dart';
 import '../../health/screens/history_screen.dart';
 import '../../profile/screens/profile_screen.dart';
 
+/// ===== IMPORT STEP + SLEEP =====
+import '../../steps/screens/step_screen.dart';
+import '../../sleep/screens/sleep_screen.dart';
+
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
 
@@ -28,10 +32,8 @@ class DashboardScreen extends StatelessWidget {
           ),
         );
       },
-
       child: Container(
         padding: const EdgeInsets.all(18),
-
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [
@@ -41,9 +43,7 @@ class DashboardScreen extends StatelessWidget {
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
-
           borderRadius: BorderRadius.circular(28),
-
           boxShadow: [
             BoxShadow(
               color: color.withOpacity(0.25),
@@ -52,20 +52,16 @@ class DashboardScreen extends StatelessWidget {
             ),
           ],
         ),
-
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-
             /// ICON
             Container(
               padding: const EdgeInsets.all(14),
-
               decoration: BoxDecoration(
                 color: Colors.white.withOpacity(0.25),
                 borderRadius: BorderRadius.circular(18),
               ),
-
               child: Icon(
                 icon,
                 color: Colors.white,
@@ -114,23 +110,18 @@ class DashboardScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
     final user = FirebaseAuth.instance.currentUser;
 
     return Scaffold(
-
       backgroundColor: const Color(0xFFF4F7FC),
 
       /// ================= APPBAR =================
       appBar: AppBar(
-
         elevation: 0,
-
         backgroundColor: Colors.transparent,
 
         title: const Row(
           children: [
-
             Icon(
               Icons.favorite,
               color: Colors.red,
@@ -149,7 +140,6 @@ class DashboardScreen extends StatelessWidget {
         ),
 
         actions: [
-
           IconButton(
             icon: const Icon(
               Icons.logout_rounded,
@@ -162,34 +152,25 @@ class DashboardScreen extends StatelessWidget {
 
       /// ================= BODY =================
       body: Center(
-
         child: SingleChildScrollView(
-
           child: ConstrainedBox(
-
             constraints: const BoxConstraints(
               maxWidth: 460,
             ),
 
             child: Padding(
-
               padding: const EdgeInsets.all(16),
 
               child: Column(
-
                 crossAxisAlignment: CrossAxisAlignment.start,
 
                 children: [
-
                   /// ================= USER CARD =================
                   Container(
-
                     width: double.infinity,
-
                     padding: const EdgeInsets.all(22),
 
                     decoration: BoxDecoration(
-
                       gradient: const LinearGradient(
                         colors: [
                           Color(0xFF6A11CB),
@@ -209,9 +190,7 @@ class DashboardScreen extends StatelessWidget {
                     ),
 
                     child: Row(
-
                       children: [
-
                         CircleAvatar(
                           radius: 34,
                           backgroundColor: Colors.white,
@@ -231,12 +210,10 @@ class DashboardScreen extends StatelessWidget {
 
                         Expanded(
                           child: Column(
-
                             crossAxisAlignment:
                             CrossAxisAlignment.start,
 
                             children: [
-
                               const Text(
                                 "Xin chào 👋",
                                 style: TextStyle(
@@ -260,14 +237,18 @@ class DashboardScreen extends StatelessWidget {
                               const SizedBox(height: 8),
 
                               Container(
-                                padding: const EdgeInsets.symmetric(
+                                padding:
+                                const EdgeInsets.symmetric(
                                   horizontal: 12,
                                   vertical: 6,
                                 ),
 
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.2),
-                                  borderRadius: BorderRadius.circular(20),
+                                  color:
+                                  Colors.white.withOpacity(0.2),
+
+                                  borderRadius:
+                                  BorderRadius.circular(20),
                                 ),
 
                                 child: const Text(
@@ -295,9 +276,7 @@ class DashboardScreen extends StatelessWidget {
 
                   /// ================= HEALTH SCORE =================
                   Container(
-
                     width: double.infinity,
-
                     padding: const EdgeInsets.all(20),
 
                     decoration: BoxDecoration(
@@ -313,18 +292,15 @@ class DashboardScreen extends StatelessWidget {
                     ),
 
                     child: Row(
-
                       mainAxisAlignment:
                       MainAxisAlignment.spaceBetween,
 
                       children: [
-
                         Column(
                           crossAxisAlignment:
                           CrossAxisAlignment.start,
 
                           children: [
-
                             const Text(
                               "Health Score",
                               style: TextStyle(
@@ -337,7 +313,6 @@ class DashboardScreen extends StatelessWidget {
 
                             Row(
                               children: const [
-
                                 Text(
                                   "85",
                                   style: TextStyle(
@@ -370,7 +345,6 @@ class DashboardScreen extends StatelessWidget {
                         ),
 
                         Container(
-
                           padding: const EdgeInsets.all(18),
 
                           decoration: BoxDecoration(
@@ -392,13 +366,10 @@ class DashboardScreen extends StatelessWidget {
 
                   /// ================= WATER =================
                   Container(
-
                     width: double.infinity,
-
                     padding: const EdgeInsets.all(20),
 
                     decoration: BoxDecoration(
-
                       gradient: LinearGradient(
                         colors: [
                           Colors.cyan.shade400,
@@ -410,19 +381,15 @@ class DashboardScreen extends StatelessWidget {
                     ),
 
                     child: Column(
-
                       crossAxisAlignment:
                       CrossAxisAlignment.start,
 
                       children: [
-
                         Row(
-
                           mainAxisAlignment:
                           MainAxisAlignment.spaceBetween,
 
                           children: const [
-
                             Text(
                               "Water Tracker 💧",
                               style: TextStyle(
@@ -443,7 +410,8 @@ class DashboardScreen extends StatelessWidget {
                         const SizedBox(height: 18),
 
                         ClipRRect(
-                          borderRadius: BorderRadius.circular(20),
+                          borderRadius:
+                          BorderRadius.circular(20),
 
                           child: LinearProgressIndicator(
                             value: 0.6,
@@ -479,7 +447,6 @@ class DashboardScreen extends StatelessWidget {
 
                   /// ================= GRID =================
                   GridView.count(
-
                     shrinkWrap: true,
 
                     physics:
@@ -494,7 +461,6 @@ class DashboardScreen extends StatelessWidget {
                     childAspectRatio: 1.02,
 
                     children: [
-
                       quickButton(
                         context,
                         "Health Check",
@@ -529,6 +495,26 @@ class DashboardScreen extends StatelessWidget {
                         Icons.person,
                         Colors.blue,
                         const ProfileScreen(),
+                      ),
+
+                      /// ================= STEP =================
+                      quickButton(
+                        context,
+                        "Bước chân",
+                        "Theo dõi vận động",
+                        Icons.directions_walk,
+                        Colors.cyan,
+                        const StepScreen(),
+                      ),
+
+                      /// ================= SLEEP =================
+                      quickButton(
+                        context,
+                        "Giấc ngủ",
+                        "Theo dõi ngủ nghỉ",
+                        Icons.nightlight_round,
+                        Colors.deepPurple,
+                        const SleepScreen(),
                       ),
                     ],
                   ),

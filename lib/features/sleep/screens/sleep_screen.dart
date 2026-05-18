@@ -55,12 +55,54 @@ class _SleepScreenState extends State<SleepScreen> {
     return sleepHours / goal;
   }
 
+  /// ================= CALCULATE HOURS =================
+  void calculateSleepHours() {
+
+    final sleepMinutes =
+        sleepTime.hour * 60 + sleepTime.minute;
+
+    final wakeMinutes =
+        wakeTime.hour * 60 + wakeTime.minute;
+
+    int totalMinutes;
+
+    if (wakeMinutes >= sleepMinutes) {
+
+      totalMinutes =
+          wakeMinutes - sleepMinutes;
+    } else {
+
+      totalMinutes =
+          (24 * 60 - sleepMinutes) + wakeMinutes;
+    }
+
+    setState(() {
+      sleepHours = totalMinutes / 60;
+    });
+  }
+
   /// ================= PICK SLEEP TIME =================
   Future<void> pickSleepTime() async {
 
     final picked = await showTimePicker(
       context: context,
+
       initialTime: sleepTime,
+
+      initialEntryMode:
+      TimePickerEntryMode.input,
+
+      builder: (context, child) {
+
+        return MediaQuery(
+
+          data: MediaQuery.of(context).copyWith(
+            alwaysUse24HourFormat: true,
+          ),
+
+          child: child!,
+        );
+      },
     );
 
     if (picked != null) {
@@ -68,6 +110,8 @@ class _SleepScreenState extends State<SleepScreen> {
       setState(() {
         sleepTime = picked;
       });
+
+      calculateSleepHours();
     }
   }
 
@@ -76,7 +120,23 @@ class _SleepScreenState extends State<SleepScreen> {
 
     final picked = await showTimePicker(
       context: context,
+
       initialTime: wakeTime,
+
+      initialEntryMode:
+      TimePickerEntryMode.input,
+
+      builder: (context, child) {
+
+        return MediaQuery(
+
+          data: MediaQuery.of(context).copyWith(
+            alwaysUse24HourFormat: true,
+          ),
+
+          child: child!,
+        );
+      },
     );
 
     if (picked != null) {
@@ -84,6 +144,8 @@ class _SleepScreenState extends State<SleepScreen> {
       setState(() {
         wakeTime = picked;
       });
+
+      calculateSleepHours();
     }
   }
 
@@ -385,7 +447,8 @@ class _SleepScreenState extends State<SleepScreen> {
                     radius: 28,
 
                     backgroundColor:
-                    qualityColor().withOpacity(0.15),
+                    qualityColor()
+                        .withOpacity(0.15),
 
                     child: Icon(
                       Icons.health_and_safety,
