@@ -9,10 +9,12 @@ class StepScreen extends StatefulWidget {
   const StepScreen({super.key});
 
   @override
-  State<StepScreen> createState() => _StepScreenState();
+  State<StepScreen> createState() =>
+      _StepScreenState();
 }
 
-class _StepScreenState extends State<StepScreen> {
+class _StepScreenState
+    extends State<StepScreen> {
 
   StreamSubscription<StepCount>? stepStream;
 
@@ -33,6 +35,7 @@ class _StepScreenState extends State<StepScreen> {
     super.initState();
 
     loadData().then((_) {
+
       requestPermission();
     });
   }
@@ -46,15 +49,21 @@ class _StepScreenState extends State<StepScreen> {
     setState(() {
 
       goal =
-          prefs.getInt("stepGoal") ??
+          prefs.getInt(
+            "stepGoal",
+          ) ??
               10000;
 
       steps =
-          prefs.getInt("todaySteps") ??
+          prefs.getInt(
+            "todaySteps",
+          ) ??
               0;
 
       initialSteps =
-          prefs.getInt("initialSteps");
+          prefs.getInt(
+            "initialSteps",
+          );
     });
   }
 
@@ -109,6 +118,7 @@ class _StepScreenState extends State<StepScreen> {
     } else {
 
       setState(() {
+
         status =
         "Không có quyền truy cập";
       });
@@ -118,45 +128,59 @@ class _StepScreenState extends State<StepScreen> {
   /// ================= START =================
   void startListening() {
 
+    stepStream?.cancel();
+
     stepStream =
         Pedometer.stepCountStream.listen(
 
               (StepCount event) async {
 
-            /// LƯU MỐC BAN ĐẦU
-            initialSteps ??= event.steps;
+            print(
+              "TOTAL SENSOR: ${event.steps}",
+            );
 
-            /// TÍNH BƯỚC HÔM NAY
-            final currentSteps =
-                event.steps - initialSteps!;
+            /// lưu mốc đầu tiên
+            if (initialSteps == null) {
+
+              initialSteps =
+                  event.steps;
+
+              await saveData();
+            }
+
+            int todaySteps =
+                event.steps -
+                    initialSteps!;
+
+            if (todaySteps < 0) {
+              todaySteps = 0;
+            }
 
             setState(() {
 
-              steps =
-              currentSteps < 0
-                  ? 0
-                  : currentSteps;
+              steps = todaySteps;
 
               status =
-              "Đang theo dõi";
+              "Đang theo dõi bước chân";
             });
 
-            /// SAVE
             await saveData();
           },
 
-          onError: (e) {
+          onError: (error) {
+
+            print(error);
 
             setState(() {
 
               status =
-              "Thiết bị không hỗ trợ";
+              "Thiết bị không hỗ trợ cảm biến";
             });
           },
         );
   }
 
-  /// ================= RESET DAILY =================
+  /// ================= RESET =================
   Future<void> resetTodaySteps() async {
 
     final prefs =
@@ -203,7 +227,7 @@ class _StepScreenState extends State<StepScreen> {
     return steps / 100;
   }
 
-  /// ================= STEP LEVEL =================
+  /// ================= LEVEL =================
   String get stepLevel {
 
     if (steps < 3000) {
@@ -254,9 +278,12 @@ class _StepScreenState extends State<StepScreen> {
 
         return AlertDialog(
 
-          shape: RoundedRectangleBorder(
+          shape:
+          RoundedRectangleBorder(
             borderRadius:
-            BorderRadius.circular(25),
+            BorderRadius.circular(
+              25,
+            ),
           ),
 
           title: const Text(
@@ -272,11 +299,15 @@ class _StepScreenState extends State<StepScreen> {
 
             decoration: InputDecoration(
 
-              hintText: "Ví dụ: 12000",
+              hintText:
+              "Ví dụ: 12000",
 
-              border: OutlineInputBorder(
+              border:
+              OutlineInputBorder(
                 borderRadius:
-                BorderRadius.circular(15),
+                BorderRadius.circular(
+                  15,
+                ),
               ),
             ),
           ),
@@ -284,11 +315,17 @@ class _StepScreenState extends State<StepScreen> {
           actions: [
 
             TextButton(
+
               onPressed: () {
-                Navigator.pop(context);
+
+                Navigator.pop(
+                  context,
+                );
               },
 
-              child: const Text("Hủy"),
+              child: const Text(
+                "Hủy",
+              ),
             ),
 
             ElevatedButton(
@@ -306,10 +343,14 @@ class _StepScreenState extends State<StepScreen> {
 
                 await saveGoal();
 
-                Navigator.pop(context);
+                Navigator.pop(
+                  context,
+                );
               },
 
-              child: const Text("Lưu"),
+              child: const Text(
+                "Lưu",
+              ),
             ),
           ],
         );
@@ -336,24 +377,30 @@ class _StepScreenState extends State<StepScreen> {
     return Expanded(
       child: Container(
 
-        padding: const EdgeInsets.all(18),
+        padding:
+        const EdgeInsets.all(18),
 
         decoration: BoxDecoration(
 
           color: Colors.white,
 
           borderRadius:
-          BorderRadius.circular(28),
+          BorderRadius.circular(
+            28,
+          ),
 
           boxShadow: [
 
             BoxShadow(
               color:
-              color.withOpacity(0.12),
+              color.withOpacity(
+                0.12,
+              ),
 
               blurRadius: 10,
 
-              offset: const Offset(0, 5),
+              offset:
+              const Offset(0, 5),
             ),
           ],
         ),
@@ -366,7 +413,9 @@ class _StepScreenState extends State<StepScreen> {
               radius: 28,
 
               backgroundColor:
-              color.withOpacity(0.15),
+              color.withOpacity(
+                0.15,
+              ),
 
               child: Icon(
                 icon,
@@ -375,24 +424,30 @@ class _StepScreenState extends State<StepScreen> {
               ),
             ),
 
-            const SizedBox(height: 14),
+            const SizedBox(
+              height: 14,
+            ),
 
             Text(
               value,
 
-              style: const TextStyle(
+              style:
+              const TextStyle(
                 fontSize: 22,
                 fontWeight:
                 FontWeight.bold,
               ),
             ),
 
-            const SizedBox(height: 6),
+            const SizedBox(
+              height: 6,
+            ),
 
             Text(
               title,
 
-              style: const TextStyle(
+              style:
+              const TextStyle(
                 color: Colors.grey,
               ),
             ),
@@ -415,16 +470,21 @@ class _StepScreenState extends State<StepScreen> {
       width: double.infinity,
 
       margin:
-      const EdgeInsets.only(bottom: 14),
+      const EdgeInsets.only(
+        bottom: 14,
+      ),
 
-      padding: const EdgeInsets.all(18),
+      padding:
+      const EdgeInsets.all(18),
 
       decoration: BoxDecoration(
 
         color: Colors.white,
 
         borderRadius:
-        BorderRadius.circular(24),
+        BorderRadius.circular(
+          24,
+        ),
 
         boxShadow: const [
 
@@ -442,7 +502,9 @@ class _StepScreenState extends State<StepScreen> {
             radius: 24,
 
             backgroundColor:
-            color.withOpacity(0.15),
+            color.withOpacity(
+              0.15,
+            ),
 
             child: Icon(
               icon,
@@ -450,7 +512,9 @@ class _StepScreenState extends State<StepScreen> {
             ),
           ),
 
-          const SizedBox(width: 15),
+          const SizedBox(
+            width: 15,
+          ),
 
           Expanded(
             child: Column(
@@ -463,17 +527,21 @@ class _StepScreenState extends State<StepScreen> {
                 Text(
                   title,
 
-                  style: const TextStyle(
+                  style:
+                  const TextStyle(
                     color: Colors.grey,
                   ),
                 ),
 
-                const SizedBox(height: 5),
+                const SizedBox(
+                  height: 5,
+                ),
 
                 Text(
                   value,
 
-                  style: const TextStyle(
+                  style:
+                  const TextStyle(
                     fontWeight:
                     FontWeight.bold,
 
@@ -515,7 +583,8 @@ class _StepScreenState extends State<StepScreen> {
 
           IconButton(
 
-            onPressed: changeGoalDialog,
+            onPressed:
+            changeGoalDialog,
 
             icon: const Icon(
               Icons.flag,
@@ -524,7 +593,8 @@ class _StepScreenState extends State<StepScreen> {
 
           IconButton(
 
-            onPressed: resetTodaySteps,
+            onPressed:
+            resetTodaySteps,
 
             icon: const Icon(
               Icons.refresh,
@@ -535,18 +605,20 @@ class _StepScreenState extends State<StepScreen> {
 
       body: SingleChildScrollView(
 
-        padding: const EdgeInsets.all(16),
+        padding:
+        const EdgeInsets.all(16),
 
         child: Column(
           children: [
 
-            /// ================= HEADER =================
             Container(
 
               width: double.infinity,
 
               padding:
-              const EdgeInsets.all(28),
+              const EdgeInsets.all(
+                28,
+              ),
 
               decoration: BoxDecoration(
 
@@ -556,66 +628,41 @@ class _StepScreenState extends State<StepScreen> {
 
                     levelColor,
 
-                    levelColor.withOpacity(
+                    levelColor
+                        .withOpacity(
                       0.7,
                     ),
                   ],
                 ),
 
                 borderRadius:
-                BorderRadius.circular(35),
-
-                boxShadow: [
-
-                  BoxShadow(
-                    color:
-                    levelColor.withOpacity(
-                      0.35,
-                    ),
-
-                    blurRadius: 18,
-
-                    offset:
-                    const Offset(0, 8),
-                  ),
-                ],
+                BorderRadius.circular(
+                  35,
+                ),
               ),
 
               child: Column(
                 children: [
 
-                  Container(
-
-                    padding:
-                    const EdgeInsets.all(18),
-
-                    decoration: BoxDecoration(
-                      color: Colors.white24,
-
-                      borderRadius:
-                      BorderRadius.circular(
-                        100,
-                      ),
-                    ),
-
-                    child: const Icon(
-                      Icons.directions_walk,
-
-                      color: Colors.white,
-
-                      size: 65,
-                    ),
+                  const Icon(
+                    Icons.directions_walk,
+                    color: Colors.white,
+                    size: 70,
                   ),
 
-                  const SizedBox(height: 20),
+                  const SizedBox(
+                    height: 20,
+                  ),
 
                   Text(
                     "$steps",
 
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style:
+                    const TextStyle(
+                      color:
+                      Colors.white,
 
-                      fontSize: 58,
+                      fontSize: 55,
 
                       fontWeight:
                       FontWeight.bold,
@@ -626,221 +673,72 @@ class _StepScreenState extends State<StepScreen> {
                     "Bước hôm nay",
 
                     style: TextStyle(
-                      color: Colors.white70,
-                      fontSize: 18,
+                      color:
+                      Colors.white70,
                     ),
                   ),
 
-                  const SizedBox(height: 25),
-
-                  ClipRRect(
-
-                    borderRadius:
-                    BorderRadius.circular(
-                      30,
-                    ),
-
-                    child:
-                    LinearProgressIndicator(
-
-                      value: progress,
-
-                      minHeight: 14,
-
-                      backgroundColor:
-                      Colors.white24,
-
-                      valueColor:
-                      const AlwaysStoppedAnimation(
-                        Colors.white,
-                      ),
-                    ),
+                  const SizedBox(
+                    height: 20,
                   ),
 
-                  const SizedBox(height: 14),
+                  LinearProgressIndicator(
+                    value: progress,
+                    minHeight: 12,
+                  ),
+
+                  const SizedBox(
+                    height: 12,
+                  ),
 
                   Text(
                     "$steps / $goal bước",
 
-                    style: const TextStyle(
-                      color: Colors.white,
-                    ),
-                  ),
-
-                  const SizedBox(height: 18),
-
-                  Container(
-
-                    padding:
-                    const EdgeInsets.symmetric(
-                      horizontal: 18,
-                      vertical: 8,
-                    ),
-
-                    decoration: BoxDecoration(
-
-                      color: Colors.white24,
-
-                      borderRadius:
-                      BorderRadius.circular(
-                        30,
-                      ),
-                    ),
-
-                    child: Text(
-                      stepLevel,
-
-                      style: const TextStyle(
-                        color: Colors.white,
-
-                        fontWeight:
-                        FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 25),
-
-            /// ================= STATUS =================
-            Container(
-
-              width: double.infinity,
-
-              padding:
-              const EdgeInsets.all(18),
-
-              decoration: BoxDecoration(
-
-                color: Colors.white,
-
-                borderRadius:
-                BorderRadius.circular(24),
-
-                boxShadow: const [
-
-                  BoxShadow(
-                    color: Colors.black12,
-                    blurRadius: 6,
-                  ),
-                ],
-              ),
-
-              child: Row(
-                children: [
-
-                  Container(
-
-                    padding:
-                    const EdgeInsets.all(10),
-
-                    decoration: BoxDecoration(
-
+                    style:
+                    const TextStyle(
                       color:
-                      Colors.green.withOpacity(
-                        0.15,
-                      ),
-
-                      shape: BoxShape.circle,
-                    ),
-
-                    child: const Icon(
-                      Icons.health_and_safety,
-
-                      color: Colors.green,
-                    ),
-                  ),
-
-                  const SizedBox(width: 14),
-
-                  Expanded(
-                    child: Text(
-                      status,
-
-                      style: const TextStyle(
-                        fontWeight:
-                        FontWeight.bold,
-
-                        fontSize: 16,
-                      ),
+                      Colors.white,
                     ),
                   ),
                 ],
               ),
             ),
 
-            const SizedBox(height: 22),
-
-            Row(
-              children: [
-
-                infoCard(
-                  Icons.local_fire_department,
-                  "Calories",
-                  calories
-                      .toStringAsFixed(0),
-                  Colors.orange,
-                ),
-
-                const SizedBox(width: 14),
-
-                infoCard(
-                  Icons.route,
-                  "Khoảng cách",
-                  "${distance.toStringAsFixed(2)} km",
-                  Colors.blue,
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 14),
-
-            Row(
-              children: [
-
-                infoCard(
-                  Icons.timer,
-                  "Thời gian",
-                  "${walkMinutes.toStringAsFixed(0)} phút",
-                  Colors.purple,
-                ),
-
-                const SizedBox(width: 14),
-
-                infoCard(
-                  Icons.flag,
-                  "Mục tiêu",
-                  "$goal",
-                  Colors.green,
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 25),
+            const SizedBox(height: 20),
 
             healthCard(
               Icons.favorite,
-              "Trạng thái vận động",
+              "Trạng thái",
               stepLevel,
               levelColor,
             ),
 
             healthCard(
-              Icons.water_drop,
-              "Nước khuyến nghị",
-              "${(steps / 2000 * 0.3 + 2).toStringAsFixed(1)} L mỗi ngày",
+              Icons.local_fire_department,
+              "Calories",
+              "${calories.toStringAsFixed(0)} kcal",
+              Colors.orange,
+            ),
+
+            healthCard(
+              Icons.route,
+              "Khoảng cách",
+              "${distance.toStringAsFixed(2)} km",
               Colors.blue,
             ),
 
             healthCard(
-              Icons.bedtime,
-              "Gợi ý nghỉ ngơi",
-              steps > 10000
-                  ? "Bạn nên nghỉ ngơi và giãn cơ."
-                  : "Hãy vận động thêm để đạt mục tiêu.",
-              Colors.indigo,
+              Icons.timer,
+              "Thời gian đi bộ",
+              "${walkMinutes.toStringAsFixed(0)} phút",
+              Colors.purple,
+            ),
+
+            healthCard(
+              Icons.info,
+              "Trạng thái cảm biến",
+              status,
+              Colors.green,
             ),
 
             const SizedBox(height: 40),

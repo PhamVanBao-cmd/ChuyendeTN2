@@ -25,6 +25,16 @@
 
     <!-- ================= STEP COUNTER ================= -->
     <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION"/>
+    <uses-permission android:name="android.permission.BODY_SENSORS"/>
+
+    <!-- ================= STEP SENSOR ================= -->
+    <uses-feature
+        android:name="android.hardware.sensor.stepcounter"
+        android:required="false"/>
+
+    <uses-feature
+        android:name="android.hardware.sensor.stepdetector"
+        android:required="false"/>
 
     <!-- ================= CAMERA FIX ================= -->
     <uses-feature
