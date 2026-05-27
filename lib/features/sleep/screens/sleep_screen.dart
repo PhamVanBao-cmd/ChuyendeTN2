@@ -27,30 +27,65 @@ class _SleepScreenState extends State<SleepScreen> {
   /// ================= INIT =================
   @override
   void initState() {
+
     super.initState();
 
-    calculateSleepHours();
-
-    loadReminder();
+    loadData();
   }
 
   /// ================= LOAD =================
-  Future<void> loadReminder() async {
+  Future<void> loadData() async {
 
     final prefs =
     await SharedPreferences.getInstance();
 
-    setState(() {
+    sleepReminder =
+        prefs.getBool(
+          "sleepReminder",
+        ) ?? true;
 
-      sleepReminder =
-          prefs.getBool(
-            "sleepReminder",
-          ) ?? true;
-    });
+    goal =
+        prefs.getDouble(
+          "sleepGoal",
+        ) ?? 8;
+
+    final sleepHour =
+        prefs.getInt(
+          "sleepHour",
+        ) ?? 23;
+
+    final sleepMinute =
+        prefs.getInt(
+          "sleepMinute",
+        ) ?? 0;
+
+    final wakeHour =
+        prefs.getInt(
+          "wakeHour",
+        ) ?? 6;
+
+    final wakeMinute =
+        prefs.getInt(
+          "wakeMinute",
+        ) ?? 30;
+
+    sleepTime = TimeOfDay(
+      hour: sleepHour,
+      minute: sleepMinute,
+    );
+
+    wakeTime = TimeOfDay(
+      hour: wakeHour,
+      minute: wakeMinute,
+    );
+
+    calculateSleepHours();
+
+    setState(() {});
   }
 
   /// ================= SAVE =================
-  Future<void> saveReminder() async {
+  Future<void> saveData() async {
 
     final prefs =
     await SharedPreferences.getInstance();
@@ -58,6 +93,31 @@ class _SleepScreenState extends State<SleepScreen> {
     await prefs.setBool(
       "sleepReminder",
       sleepReminder,
+    );
+
+    await prefs.setDouble(
+      "sleepGoal",
+      goal,
+    );
+
+    await prefs.setInt(
+      "sleepHour",
+      sleepTime.hour,
+    );
+
+    await prefs.setInt(
+      "sleepMinute",
+      sleepTime.minute,
+    );
+
+    await prefs.setInt(
+      "wakeHour",
+      wakeTime.hour,
+    );
+
+    await prefs.setInt(
+      "wakeMinute",
+      wakeTime.minute,
     );
   }
 
@@ -92,7 +152,9 @@ class _SleepScreenState extends State<SleepScreen> {
   /// ================= PROGRESS =================
   double get progress {
 
-    if (sleepHours >= goal) return 1;
+    if (sleepHours >= goal) {
+      return 1;
+    }
 
     return sleepHours / goal;
   }
@@ -122,10 +184,8 @@ class _SleepScreenState extends State<SleepScreen> {
               wakeMinutes;
     }
 
-    setState(() {
-      sleepHours =
-          totalMinutes / 60;
-    });
+    sleepHours =
+        totalMinutes / 60;
   }
 
   /// ================= PICK SLEEP =================
@@ -158,10 +218,13 @@ class _SleepScreenState extends State<SleepScreen> {
     if (picked != null) {
 
       setState(() {
+
         sleepTime = picked;
+
+        calculateSleepHours();
       });
 
-      calculateSleepHours();
+      await saveData();
 
       /// ================= NOTIFICATION =================
       if (sleepReminder) {
@@ -217,10 +280,13 @@ class _SleepScreenState extends State<SleepScreen> {
     if (picked != null) {
 
       setState(() {
+
         wakeTime = picked;
+
+        calculateSleepHours();
       });
 
-      calculateSleepHours();
+      await saveData();
     }
   }
 
@@ -526,7 +592,7 @@ class _SleepScreenState extends State<SleepScreen> {
               ],
             ),
 
-            const SizedBox(height: 25),
+            const SizedBox(height: 20),
 
             /// ================= QUALITY =================
             Container(
@@ -689,11 +755,12 @@ class _SleepScreenState extends State<SleepScreen> {
                         (value) async {
 
                       setState(() {
+
                         sleepReminder =
                             value;
                       });
 
-                      await saveReminder();
+                      await saveData();
 
                       if (value) {
 

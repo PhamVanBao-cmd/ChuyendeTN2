@@ -15,7 +15,6 @@ class HistoryScreen extends StatefulWidget {
 class _HistoryScreenState
     extends State<HistoryScreen> {
 
-  /// ================= SELECTED =================
   final List<String> selectedDocs = [];
 
   /// ================= DELETE =================
@@ -62,11 +61,15 @@ class _HistoryScreenState
       backgroundColor:
       const Color(0xFFF5F7FB),
 
-      /// ================= APPBAR =================
       appBar: AppBar(
+
         elevation: 0,
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
+
+        backgroundColor:
+        Colors.white,
+
+        foregroundColor:
+        Colors.black,
 
         title: Text(
 
@@ -82,6 +85,7 @@ class _HistoryScreenState
         leading: IconButton(
 
           icon: Icon(
+
             selectedDocs.isEmpty
                 ? Icons.arrow_back
                 : Icons.close,
@@ -99,6 +103,7 @@ class _HistoryScreenState
 
               Navigator.pushReplacement(
                 context,
+
                 MaterialPageRoute(
                   builder: (_) =>
                   const DashboardScreen(),
@@ -135,13 +140,15 @@ class _HistoryScreenState
                       ),
 
                       content: Text(
-                        "Bạn muốn xóa ${selectedDocs.length} lần đo?",
+                        "Bạn muốn xóa ${selectedDocs.length} mục?",
                       ),
 
                       actions: [
 
                         TextButton(
+
                           onPressed: () {
+
                             Navigator.pop(
                               context,
                               false,
@@ -154,7 +161,9 @@ class _HistoryScreenState
                         ),
 
                         ElevatedButton(
+
                           onPressed: () {
+
                             Navigator.pop(
                               context,
                               true,
@@ -178,7 +187,6 @@ class _HistoryScreenState
         ],
       ),
 
-      /// ================= BODY =================
       body: user == null
 
           ? const Center(
@@ -187,626 +195,748 @@ class _HistoryScreenState
         ),
       )
 
-          : Center(
+          : StreamBuilder<QuerySnapshot>(
 
-        child: ConstrainedBox(
+        stream: FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .collection('health')
+            .orderBy(
+          'createdAt',
+          descending: true,
+        )
+            .snapshots(),
 
-          constraints:
-          const BoxConstraints(
-            maxWidth: 500,
-          ),
+        builder: (context, snapshot) {
 
-          child: StreamBuilder<QuerySnapshot>(
+          if (!snapshot.hasData) {
 
-            stream: FirebaseFirestore.instance
-                .collection('users')
-                .doc(user.uid)
-                .collection('health')
-                .orderBy(
-              'createdAt',
-              descending: true,
-            )
-                .snapshots(),
+            return const Center(
+              child:
+              CircularProgressIndicator(),
+            );
+          }
 
-            builder: (context, snapshot) {
+          final docs =
+              snapshot.data!.docs;
 
-              if (!snapshot.hasData) {
+          if (docs.isEmpty) {
 
-                return const Center(
-                  child:
-                  CircularProgressIndicator(),
-                );
-              }
+            return const Center(
+              child: Text(
+                "Chưa có dữ liệu 😢",
+              ),
+            );
+          }
 
-              final docs =
-                  snapshot.data!.docs;
+          return ListView.builder(
 
-              if (docs.isEmpty) {
+            padding:
+            const EdgeInsets.all(16),
 
-                return const Center(
-                  child: Text(
-                    "Chưa có dữ liệu 😢",
-                    style: TextStyle(
-                      fontSize: 18,
-                    ),
-                  ),
-                );
-              }
+            itemCount: docs.length,
 
-              return ListView.builder(
+            itemBuilder: (_, i) {
 
-                padding:
-                const EdgeInsets.all(16),
+              final d = docs[i];
 
-                itemCount: docs.length,
+              final data =
+              d.data()
+              as Map<String, dynamic>;
 
-                itemBuilder: (_, i) {
+              final isSelected =
+              selectedDocs.contains(
+                d.id,
+              );
 
-                  final d = docs[i];
+              final type =
+                  data['type'] ?? 'bmi';
 
-                  final isSelected =
-                  selectedDocs.contains(
-                    d.id,
+              final bmi =
+              (data['bmi'] ?? 0)
+                  .toDouble();
+
+              final calories =
+              (data['calories'] ?? 0)
+                  .toDouble();
+
+              final sys =
+                  int.tryParse(
+                    data['systolic']
+                        ?.toString() ??
+                        '0',
+                  ) ??
+                      0;
+
+              final dia =
+                  int.tryParse(
+                    data['diastolic']
+                        ?.toString() ??
+                        '0',
+                  ) ??
+                      0;
+
+              final hr =
+                  int.tryParse(
+                    data['heartRate']
+                        ?.toString() ??
+                        '0',
+                  ) ??
+                      0;
+
+              final sugar =
+                  double.tryParse(
+                    data['bloodSugar']
+                        ?.toString() ??
+                        '0',
+                  ) ??
+                      0;
+
+              final chol =
+                  double.tryParse(
+                    data['cholesterol']
+                        ?.toString() ??
+                        '0',
+                  ) ??
+                      0;
+
+              final weight =
+                  double.tryParse(
+                    data['weight']
+                        ?.toString() ??
+                        '0',
+                  ) ??
+                      0;
+
+              final height =
+                  double.tryParse(
+                    data['height']
+                        ?.toString() ??
+                        '0',
+                  ) ??
+                      0;
+
+              return InkWell(
+
+                borderRadius:
+                BorderRadius.circular(
+                  25,
+                ),
+
+                onLongPress: () {
+
+                  setState(() {
+
+                    if (isSelected) {
+
+                      selectedDocs.remove(
+                        d.id,
+                      );
+
+                    } else {
+
+                      selectedDocs.add(
+                        d.id,
+                      );
+                    }
+                  });
+                },
+
+                onTap: () {
+
+                  if (selectedDocs
+                      .isNotEmpty) {
+
+                    setState(() {
+
+                      if (isSelected) {
+
+                        selectedDocs
+                            .remove(
+                          d.id,
+                        );
+
+                      } else {
+
+                        selectedDocs
+                            .add(
+                          d.id,
+                        );
+                      }
+                    });
+
+                    return;
+                  }
+
+                  showModalBottomSheet(
+
+                    context: context,
+
+                    isScrollControlled:
+                    true,
+
+                    backgroundColor:
+                    Colors.transparent,
+
+                    builder: (_) {
+
+                      return Container(
+
+                        padding:
+                        const EdgeInsets.all(
+                          20,
+                        ),
+
+                        decoration:
+                        const BoxDecoration(
+
+                          color: Colors.white,
+
+                          borderRadius:
+                          BorderRadius.vertical(
+                            top:
+                            Radius.circular(
+                              30,
+                            ),
+                          ),
+                        ),
+
+                        child:
+                        SingleChildScrollView(
+
+                          child: Column(
+
+                            crossAxisAlignment:
+                            CrossAxisAlignment
+                                .start,
+
+                            children: [
+
+                              Center(
+                                child: Container(
+
+                                  width: 60,
+                                  height: 6,
+
+                                  decoration:
+                                  BoxDecoration(
+
+                                    color: Colors
+                                        .grey
+                                        .shade300,
+
+                                    borderRadius:
+                                    BorderRadius
+                                        .circular(
+                                      10,
+                                    ),
+                                  ),
+                                ),
+                              ),
+
+                              const SizedBox(
+                                height: 20,
+                              ),
+
+                              Text(
+
+                                type == 'calories'
+                                    ? "Chi tiết Calories"
+                                    : "Chi tiết sức khỏe",
+
+                                style:
+                                const TextStyle(
+                                  fontSize: 24,
+                                  fontWeight:
+                                  FontWeight.bold,
+                                ),
+                              ),
+
+                              const SizedBox(
+                                height: 20,
+                              ),
+
+                              Container(
+
+                                width:
+                                double.infinity,
+
+                                padding:
+                                const EdgeInsets
+                                    .all(20),
+
+                                decoration:
+                                BoxDecoration(
+
+                                  gradient:
+                                  LinearGradient(
+
+                                    colors:
+
+                                    type ==
+                                        'calories'
+
+                                        ? [
+
+                                      Colors
+                                          .orange
+                                          .shade300,
+
+                                      Colors
+                                          .deepOrange,
+                                    ]
+
+                                        : [
+
+                                      getBMIColor(
+                                        bmi,
+                                      ).withOpacity(
+                                        0.7,
+                                      ),
+
+                                      getBMIColor(
+                                        bmi,
+                                      ),
+                                    ],
+                                  ),
+
+                                  borderRadius:
+                                  BorderRadius
+                                      .circular(
+                                    25,
+                                  ),
+                                ),
+
+                                child: Column(
+                                  children: [
+
+                                    Icon(
+
+                                      type ==
+                                          'calories'
+
+                                          ? Icons
+                                          .local_fire_department
+
+                                          : Icons
+                                          .favorite,
+
+                                      color:
+                                      Colors.white,
+
+                                      size: 50,
+                                    ),
+
+                                    const SizedBox(
+                                      height: 10,
+                                    ),
+
+                                    Text(
+
+                                      type ==
+                                          'calories'
+
+                                          ? calories
+                                          .toStringAsFixed(
+                                        0,
+                                      )
+
+                                          : bmi
+                                          .toStringAsFixed(
+                                        1,
+                                      ),
+
+                                      style:
+                                      const TextStyle(
+
+                                        color:
+                                        Colors
+                                            .white,
+
+                                        fontSize:
+                                        40,
+
+                                        fontWeight:
+                                        FontWeight
+                                            .bold,
+                                      ),
+                                    ),
+
+                                    Text(
+
+                                      type ==
+                                          'calories'
+
+                                          ? "kcal"
+
+                                          : getBMIText(
+                                        bmi,
+                                      ),
+
+                                      style:
+                                      const TextStyle(
+
+                                        color:
+                                        Colors
+                                            .white,
+
+                                        fontSize:
+                                        18,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+
+                              const SizedBox(
+                                height: 20,
+                              ),
+
+                              if (type == 'calories') ...[
+
+                                detailTile(
+                                  Icons.flag,
+                                  "Mục tiêu",
+                                  data['goal']
+                                      ?.toString() ??
+                                      "",
+                                  Colors.orange,
+                                ),
+
+                                detailTile(
+                                  Icons.directions_run,
+                                  "Hoạt động",
+                                  data['activity']
+                                      ?.toString() ??
+                                      "",
+                                  Colors.blue,
+                                ),
+
+                                detailTile(
+                                  Icons.person,
+                                  "Giới tính",
+                                  data['gender']
+                                      ?.toString() ??
+                                      "",
+                                  Colors.purple,
+                                ),
+                              ],
+
+                              detailTile(
+                                Icons.monitor_weight,
+                                "Cân nặng",
+                                "$weight kg",
+                                Colors.orange,
+                              ),
+
+                              detailTile(
+                                Icons.height,
+                                "Chiều cao",
+                                "$height cm",
+                                Colors.blue,
+                              ),
+
+                              if (type !=
+                                  'calories') ...[
+
+                                detailTile(
+                                  Icons.favorite,
+                                  "Huyết áp",
+                                  "$sys / $dia mmHg",
+                                  Colors.red,
+                                ),
+
+                                detailTile(
+                                  Icons.monitor_heart,
+                                  "Nhịp tim",
+                                  "$hr bpm",
+                                  Colors.pink,
+                                ),
+
+                                detailTile(
+                                  Icons.bloodtype,
+                                  "Đường huyết",
+                                  "$sugar mg/dL",
+                                  Colors.deepPurple,
+                                ),
+
+                                detailTile(
+                                  Icons.water_drop,
+                                  "Cholesterol",
+                                  "$chol mg/dL",
+                                  Colors.cyan,
+                                ),
+                              ],
+
+                              const SizedBox(
+                                height: 20,
+                              ),
+
+                              Container(
+
+                                width:
+                                double.infinity,
+
+                                padding:
+                                const EdgeInsets
+                                    .all(16),
+
+                                decoration:
+                                BoxDecoration(
+
+                                  color: Colors
+                                      .grey
+                                      .shade100,
+
+                                  borderRadius:
+                                  BorderRadius
+                                      .circular(
+                                    18,
+                                  ),
+                                ),
+
+                                child: Row(
+                                  children: [
+
+                                    const Icon(
+                                      Icons
+                                          .access_time,
+                                    ),
+
+                                    const SizedBox(
+                                      width: 10,
+                                    ),
+
+                                    Expanded(
+                                      child: Text(
+
+                                        data['createdAt']
+                                            !=
+                                            null
+
+                                            ? (data['createdAt']
+                                        as Timestamp)
+                                            .toDate()
+                                            .toString()
+
+                                            : "",
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
                   );
+                },
 
-                  final bmi =
-                  (d['bmi'] ?? 0)
-                      .toDouble();
+                child: Container(
 
-                  final sys =
-                      int.tryParse(
-                        d['systolic']
-                            .toString(),
-                      ) ??
-                          0;
+                  margin:
+                  const EdgeInsets.only(
+                    bottom: 16,
+                  ),
 
-                  final dia =
-                      int.tryParse(
-                        d['diastolic']
-                            .toString(),
-                      ) ??
-                          0;
+                  padding:
+                  const EdgeInsets.all(
+                    18,
+                  ),
 
-                  final hr =
-                      int.tryParse(
-                        d['heartRate']
-                            .toString(),
-                      ) ??
-                          0;
+                  decoration: BoxDecoration(
 
-                  final sugar =
-                      double.tryParse(
-                        d['bloodSugar']
-                            .toString(),
-                      ) ??
-                          0;
+                    border: isSelected
 
-                  final chol =
-                      double.tryParse(
-                        d['cholesterol']
-                            .toString(),
-                      ) ??
-                          0;
+                        ? Border.all(
+                      color: Colors.red,
+                      width: 3,
+                    )
 
-                  final weight =
-                      double.tryParse(
-                        d['weight']
-                            .toString(),
-                      ) ??
-                          0;
+                        : null,
 
-                  final height =
-                      double.tryParse(
-                        d['height']
-                            .toString(),
-                      ) ??
-                          0;
+                    gradient:
+                    LinearGradient(
 
-                  return InkWell(
+                      colors:
+
+                      type == 'calories'
+
+                          ? [
+                        Colors.orange,
+                        Colors.deepOrange,
+                      ]
+
+                          : [
+                        const Color(
+                          0xFF4facfe,
+                        ),
+                        const Color(
+                          0xFF00f2fe,
+                        ),
+                      ],
+                    ),
 
                     borderRadius:
                     BorderRadius.circular(
                       25,
                     ),
+                  ),
 
-                    /// ================= LONG PRESS =================
-                    onLongPress: () {
+                  child: Row(
+                    children: [
 
-                      setState(() {
+                      Container(
 
-                        if (isSelected) {
+                        padding:
+                        const EdgeInsets
+                            .all(14),
 
-                          selectedDocs.remove(
-                            d.id,
-                          );
+                        decoration:
+                        BoxDecoration(
 
-                        } else {
+                          color:
+                          Colors.white,
 
-                          selectedDocs.add(
-                            d.id,
-                          );
-                        }
-                      });
-                    },
+                          borderRadius:
+                          BorderRadius
+                              .circular(
+                            18,
+                          ),
+                        ),
 
-                    /// ================= TAP =================
-                    onTap: () {
+                        child: Icon(
 
-                      /// NẾU ĐANG CHỌN
-                      if (selectedDocs
-                          .isNotEmpty) {
+                          type ==
+                              'calories'
 
-                        setState(() {
+                              ? Icons
+                              .local_fire_department
 
-                          if (isSelected) {
+                              : Icons.favorite,
 
-                            selectedDocs
-                                .remove(
-                              d.id,
-                            );
+                          color:
 
-                          } else {
+                          type ==
+                              'calories'
 
-                            selectedDocs
-                                .add(
-                              d.id,
-                            );
-                          }
-                        });
+                              ? Colors.orange
 
-                        return;
-                      }
+                              : Colors.red,
 
-                      /// ================= DETAIL =================
-                      showModalBottomSheet(
+                          size: 30,
+                        ),
+                      ),
 
-                        context: context,
+                      const SizedBox(
+                        width: 15,
+                      ),
 
-                        isScrollControlled:
-                        true,
+                      Expanded(
+                        child: Column(
 
-                        backgroundColor:
-                        Colors.transparent,
+                          crossAxisAlignment:
+                          CrossAxisAlignment
+                              .start,
 
-                        builder: (_) {
+                          children: [
 
-                          return Container(
+                            Text(
 
-                            padding:
-                            const EdgeInsets
-                                .all(20),
+                              type ==
+                                  'calories'
 
-                            decoration:
-                            const BoxDecoration(
-                              color: Colors.white,
+                                  ? "Calories: ${calories.toStringAsFixed(0)} kcal"
 
-                              borderRadius:
-                              BorderRadius
-                                  .vertical(
-                                top:
-                                Radius.circular(
-                                  30,
-                                ),
+                                  : "BMI: ${bmi.toStringAsFixed(1)}",
+
+                              style:
+                              const TextStyle(
+
+                                color:
+                                Colors.white,
+
+                                fontSize:
+                                20,
+
+                                fontWeight:
+                                FontWeight
+                                    .bold,
                               ),
                             ),
 
-                            child:
-                            SingleChildScrollView(
+                            const SizedBox(
+                              height: 6,
+                            ),
 
-                              child: Column(
+                            Text(
 
-                                crossAxisAlignment:
-                                CrossAxisAlignment
-                                    .start,
+                              type ==
+                                  'calories'
 
-                                children: [
+                                  ? "Mục tiêu: ${data['goal'] ?? ''}"
 
-                                  /// HANDLE
-                                  Center(
-                                    child: Container(
-                                      width: 60,
-                                      height: 6,
+                                  : getBMIText(
+                                bmi,
+                              ),
 
-                                      decoration:
-                                      BoxDecoration(
-                                        color: Colors
-                                            .grey
-                                            .shade300,
-
-                                        borderRadius:
-                                        BorderRadius
-                                            .circular(
-                                          10,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-
-                                  const SizedBox(
-                                    height: 20,
-                                  ),
-
-                                  const Text(
-                                    "Chi tiết lần đo",
-
-                                    style: TextStyle(
-                                      fontSize: 24,
-                                      fontWeight:
-                                      FontWeight
-                                          .bold,
-                                    ),
-                                  ),
-
-                                  const SizedBox(
-                                    height: 20,
-                                  ),
-
-                                  /// BMI CARD
-                                  Container(
-
-                                    width:
-                                    double.infinity,
-
-                                    padding:
-                                    const EdgeInsets
-                                        .all(20),
-
-                                    decoration:
-                                    BoxDecoration(
-
-                                      gradient:
-                                      LinearGradient(
-                                        colors: [
-
-                                          getBMIColor(
-                                            bmi,
-                                          ).withOpacity(
-                                            0.7,
-                                          ),
-
-                                          getBMIColor(
-                                            bmi,
-                                          ),
-                                        ],
-                                      ),
-
-                                      borderRadius:
-                                      BorderRadius
-                                          .circular(
-                                        25,
-                                      ),
-                                    ),
-
-                                    child: Column(
-                                      children: [
-
-                                        const Icon(
-                                          Icons.favorite,
-                                          color:
-                                          Colors
-                                              .white,
-                                          size: 50,
-                                        ),
-
-                                        const SizedBox(
-                                          height: 10,
-                                        ),
-
-                                        Text(
-                                          bmi
-                                              .toStringAsFixed(
-                                            1,
-                                          ),
-
-                                          style:
-                                          const TextStyle(
-                                            color:
-                                            Colors
-                                                .white,
-                                            fontSize:
-                                            40,
-                                            fontWeight:
-                                            FontWeight.bold,
-                                          ),
-                                        ),
-
-                                        Text(
-                                          getBMIText(
-                                            bmi,
-                                          ),
-
-                                          style:
-                                          const TextStyle(
-                                            color:
-                                            Colors
-                                                .white,
-                                            fontSize:
-                                            18,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-
-                                  const SizedBox(
-                                    height: 25,
-                                  ),
-
-                                  detailTile(
-                                    Icons.monitor_weight,
-                                    "Cân nặng",
-                                    "$weight kg",
-                                    Colors.orange,
-                                  ),
-
-                                  detailTile(
-                                    Icons.height,
-                                    "Chiều cao",
-                                    "$height cm",
-                                    Colors.blue,
-                                  ),
-
-                                  detailTile(
-                                    Icons.favorite,
-                                    "Huyết áp",
-                                    "$sys / $dia mmHg",
-                                    Colors.red,
-                                  ),
-
-                                  detailTile(
-                                    Icons.monitor_heart,
-                                    "Nhịp tim",
-                                    "$hr bpm",
-                                    Colors.pink,
-                                  ),
-
-                                  detailTile(
-                                    Icons.bloodtype,
-                                    "Đường huyết",
-                                    "$sugar mg/dL",
-                                    Colors.deepPurple,
-                                  ),
-
-                                  detailTile(
-                                    Icons.water_drop,
-                                    "Cholesterol",
-                                    "$chol mg/dL",
-                                    Colors.cyan,
-                                  ),
-
-                                  const SizedBox(
-                                    height: 20,
-                                  ),
-
-                                  /// DATE
-                                  Container(
-
-                                    width:
-                                    double.infinity,
-
-                                    padding:
-                                    const EdgeInsets
-                                        .all(16),
-
-                                    decoration:
-                                    BoxDecoration(
-                                      color: Colors
-                                          .grey
-                                          .shade100,
-
-                                      borderRadius:
-                                      BorderRadius
-                                          .circular(
-                                        18,
-                                      ),
-                                    ),
-
-                                    child: Row(
-                                      children: [
-
-                                        const Icon(
-                                          Icons
-                                              .access_time,
-                                        ),
-
-                                        const SizedBox(
-                                          width: 10,
-                                        ),
-
-                                        Expanded(
-                                          child: Text(
-
-                                            d['createdAt'] !=
-                                                null
-
-                                                ? (d['createdAt']
-                                            as Timestamp)
-                                                .toDate()
-                                                .toString()
-
-                                                : "",
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-
-                                  const SizedBox(
-                                    height: 20,
-                                  ),
-                                ],
+                              style:
+                              const TextStyle(
+                                color: Colors
+                                    .white70,
                               ),
                             ),
-                          );
-                        },
-                      );
-                    },
 
-                    /// ================= CARD =================
-                    child: Container(
+                            const SizedBox(
+                              height: 8,
+                            ),
 
-                      margin:
-                      const EdgeInsets.only(
-                        bottom: 16,
-                      ),
+                            Text(
 
-                      padding:
-                      const EdgeInsets.all(
-                        18,
-                      ),
+                              type ==
+                                  'calories'
 
-                      decoration: BoxDecoration(
+                                  ? "Hoạt động: ${data['activity'] ?? ''}"
 
-                        border: isSelected
+                                  : "Huyết áp: $sys/$dia",
 
-                            ? Border.all(
-                          color: Colors.red,
-                          width: 3,
-                        )
-
-                            : null,
-
-                        gradient:
-                        const LinearGradient(
-                          colors: [
-                            Color(0xFF4facfe),
-                            Color(0xFF00f2fe),
+                              style:
+                              const TextStyle(
+                                color:
+                                Colors.white,
+                              ),
+                            ),
                           ],
                         ),
-
-                        borderRadius:
-                        BorderRadius.circular(
-                          25,
-                        ),
-
-                        boxShadow: const [
-                          BoxShadow(
-                            color: Colors.black12,
-                            blurRadius: 8,
-                          ),
-                        ],
                       ),
 
-                      child: Row(
-                        children: [
+                      isSelected
 
-                          /// ICON
-                          Container(
-                            padding:
-                            const EdgeInsets
-                                .all(14),
+                          ? const Icon(
+                        Icons.check_circle,
+                        color:
+                        Colors.white,
+                        size: 30,
+                      )
 
-                            decoration:
-                            BoxDecoration(
-                              color:
-                              Colors.white,
-
-                              borderRadius:
-                              BorderRadius
-                                  .circular(
-                                18,
-                              ),
-                            ),
-
-                            child: const Icon(
-                              Icons.favorite,
-                              color: Colors.red,
-                              size: 30,
-                            ),
-                          ),
-
-                          const SizedBox(
-                            width: 15,
-                          ),
-
-                          /// INFO
-                          Expanded(
-                            child: Column(
-
-                              crossAxisAlignment:
-                              CrossAxisAlignment
-                                  .start,
-
-                              children: [
-
-                                Text(
-                                  "BMI: ${bmi.toStringAsFixed(1)}",
-
-                                  style:
-                                  const TextStyle(
-                                    color:
-                                    Colors.white,
-                                    fontSize:
-                                    20,
-                                    fontWeight:
-                                    FontWeight
-                                        .bold,
-                                  ),
-                                ),
-
-                                const SizedBox(
-                                  height: 6,
-                                ),
-
-                                Text(
-                                  getBMIText(
-                                    bmi,
-                                  ),
-
-                                  style:
-                                  const TextStyle(
-                                    color: Colors
-                                        .white70,
-                                  ),
-                                ),
-
-                                const SizedBox(
-                                  height: 8,
-                                ),
-
-                                Text(
-                                  "Huyết áp: $sys/$dia",
-
-                                  style:
-                                  const TextStyle(
-                                    color:
-                                    Colors.white,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-
-                          /// CHECK
-                          isSelected
-
-                              ? const Icon(
-                            Icons.check_circle,
-                            color:
-                            Colors.white,
-                            size: 30,
-                          )
-
-                              : const Icon(
-                            Icons
-                                .arrow_forward_ios,
-                            color:
-                            Colors.white,
-                          ),
-                        ],
+                          : const Icon(
+                        Icons
+                            .arrow_forward_ios,
+                        color:
+                        Colors.white,
                       ),
-                    ),
-                  );
-                },
+                    ],
+                  ),
+                ),
               );
             },
-          ),
-        ),
+          );
+        },
       ),
     );
   }
 
-  /// ================= DETAIL TILE =================
   Widget detailTile(
       IconData icon,
       String title,
@@ -825,6 +955,7 @@ class _HistoryScreenState
       const EdgeInsets.all(16),
 
       decoration: BoxDecoration(
+
         color: Colors.grey.shade100,
 
         borderRadius:
@@ -835,6 +966,7 @@ class _HistoryScreenState
         children: [
 
           CircleAvatar(
+
             backgroundColor:
             color.withOpacity(0.15),
 
@@ -870,7 +1002,6 @@ class _HistoryScreenState
     );
   }
 
-  /// ================= BMI TEXT =================
   String getBMIText(double bmi) {
 
     if (bmi < 18.5) {
@@ -888,7 +1019,6 @@ class _HistoryScreenState
     return "Béo phì";
   }
 
-  /// ================= BMI COLOR =================
   Color getBMIColor(double bmi) {
 
     if (bmi < 18.5) {

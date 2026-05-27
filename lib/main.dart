@@ -4,6 +4,9 @@ import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
+import 'package:timezone/data/latest.dart' as tz;
+import 'package:timezone/timezone.dart' as tz;
+
 import 'firebase_options.dart';
 
 import 'core/theme/app_theme.dart';
@@ -16,15 +19,23 @@ void main() async {
 
   WidgetsFlutterBinding.ensureInitialized();
 
-  /// FIREBASE
+  /// ================= FIREBASE =================
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  /// NOTIFICATION
+  /// ================= TIMEZONE =================
+  tz.initializeTimeZones();
+
+  /// FIX ASIA/SAIGON
+  tz.setLocalLocation(
+    tz.getLocation("Asia/Ho_Chi_Minh"),
+  );
+
+  /// ================= NOTIFICATION =================
   await NotificationService.init();
 
-  /// FOREGROUND TASK
+  /// ================= FOREGROUND TASK =================
   FlutterForegroundTask.init(
 
     androidNotificationOptions:
@@ -35,7 +46,7 @@ void main() async {
       channelName: 'Health Service',
 
       channelDescription:
-      'Theo dõi bước chân nền',
+      'Theo dõi sức khỏe nền',
 
       channelImportance:
       NotificationChannelImportance.LOW,
@@ -114,6 +125,7 @@ class AuthWrapper extends StatelessWidget {
         }
 
         if (!snapshot.hasData) {
+
           return const WelcomeScreen();
         }
 

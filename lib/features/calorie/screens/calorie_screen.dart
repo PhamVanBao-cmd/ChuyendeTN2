@@ -3,8 +3,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:percent_indicator/circular_percent_indicator.dart';
 
-import 'calorie_history_screen.dart';
-
 class CalorieScreen extends StatefulWidget {
   const CalorieScreen({super.key});
 
@@ -57,6 +55,16 @@ class _CalorieScreenState
     if (weight == 0 ||
         height == 0 ||
         age == 0) {
+
+      ScaffoldMessenger.of(context).showSnackBar(
+
+        const SnackBar(
+          content: Text(
+            "Vui lòng nhập đầy đủ thông tin",
+          ),
+        ),
+      );
+
       return;
     }
 
@@ -127,35 +135,66 @@ class _CalorieScreenState
 
     if (user == null) return;
 
+    if (result <= 0) {
+
+      ScaffoldMessenger.of(context).showSnackBar(
+
+        const SnackBar(
+          content: Text(
+            "Hãy tính calories trước",
+          ),
+        ),
+      );
+
+      return;
+    }
+
+    double weight =
+        double.tryParse(
+          weightController.text,
+        ) ??
+            0;
+
+    double height =
+        double.tryParse(
+          heightController.text,
+        ) ??
+            0;
+
+    int age =
+        int.tryParse(
+          ageController.text,
+        ) ??
+            0;
+
     await FirebaseFirestore.instance
         .collection('users')
         .doc(user.uid)
-        .collection('calories')
+        .collection('health')
         .add({
 
-      'weight':
-      weightController.text,
+      /// TYPE
+      'type': 'calories',
 
-      'height':
-      heightController.text,
-
-      'age':
-      ageController.text,
+      /// DATA
+      'weight': weight,
+      'height': height,
+      'age': age,
 
       'gender': gender,
-
       'activity': activity,
-
       'goal': goal,
 
       'calories': result,
 
-      'createdAt':
-      Timestamp.now(),
+      /// DATE
+      'createdAt': Timestamp.now(),
     });
 
-    ScaffoldMessenger.of(context)
-        .showSnackBar(
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+
       const SnackBar(
         content: Text(
           "Đã lưu calories",
@@ -202,12 +241,14 @@ class _CalorieScreenState
       ) {
 
     return Padding(
+
       padding:
       const EdgeInsets.symmetric(
         vertical: 10,
       ),
 
       child: TextField(
+
         controller: controller,
 
         keyboardType:
@@ -227,6 +268,7 @@ class _CalorieScreenState
           fillColor: Colors.white,
 
           border: OutlineInputBorder(
+
             borderRadius:
             BorderRadius.circular(
               18,
@@ -236,148 +278,6 @@ class _CalorieScreenState
             BorderSide.none,
           ),
         ),
-      ),
-    );
-  }
-
-  /// ================= MACRO CARD =================
-  Widget macroCard(
-      String title,
-      String value,
-      Color color,
-      IconData icon,
-      ) {
-
-    return Expanded(
-      child: Container(
-
-        margin:
-        const EdgeInsets.symmetric(
-          horizontal: 5,
-        ),
-
-        padding:
-        const EdgeInsets.all(16),
-
-        decoration: BoxDecoration(
-          color:
-          color.withOpacity(0.1),
-
-          borderRadius:
-          BorderRadius.circular(
-            20,
-          ),
-        ),
-
-        child: Column(
-          children: [
-
-            Icon(
-              icon,
-              color: color,
-              size: 28,
-            ),
-
-            const SizedBox(height: 10),
-
-            Text(
-              value,
-
-              style: TextStyle(
-                color: color,
-
-                fontWeight:
-                FontWeight.bold,
-
-                fontSize: 18,
-              ),
-            ),
-
-            const SizedBox(height: 5),
-
-            Text(
-              title,
-
-              style: const TextStyle(
-                color: Colors.grey,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// ================= FOOD =================
-  Widget foodTile(
-      String emoji,
-      String title,
-      String desc,
-      ) {
-
-    return Container(
-
-      margin:
-      const EdgeInsets.only(
-        bottom: 10,
-      ),
-
-      padding:
-      const EdgeInsets.all(14),
-
-      decoration: BoxDecoration(
-        color: Colors.white,
-
-        borderRadius:
-        BorderRadius.circular(
-          18,
-        ),
-      ),
-
-      child: Row(
-        children: [
-
-          Text(
-            emoji,
-            style: const TextStyle(
-              fontSize: 28,
-            ),
-          ),
-
-          const SizedBox(width: 14),
-
-          Expanded(
-            child: Column(
-              crossAxisAlignment:
-              CrossAxisAlignment.start,
-
-              children: [
-
-                Text(
-                  title,
-
-                  style:
-                  const TextStyle(
-                    fontWeight:
-                    FontWeight.bold,
-                  ),
-                ),
-
-                const SizedBox(height: 4),
-
-                Text(
-                  desc,
-
-                  style:
-                  const TextStyle(
-                    color:
-                    Colors.grey,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -417,34 +317,14 @@ class _CalorieScreenState
         Colors.black,
 
         title: const Text(
+
           "Calories Calculator",
+
           style: TextStyle(
             fontWeight:
             FontWeight.bold,
           ),
         ),
-
-        actions: [
-
-          IconButton(
-
-            icon:
-            const Icon(Icons.history),
-
-            onPressed: () {
-
-              Navigator.push(
-                context,
-
-                MaterialPageRoute(
-                  builder:
-                      (_) =>
-                  const CalorieHistoryScreen(),
-                ),
-              );
-            },
-          ),
-        ],
       ),
 
       body: SingleChildScrollView(
@@ -455,15 +335,13 @@ class _CalorieScreenState
         child: Column(
           children: [
 
-            /// ================= HEADER =================
+            /// HEADER
             Container(
 
               width: double.infinity,
 
               padding:
-              const EdgeInsets.all(
-                24,
-              ),
+              const EdgeInsets.all(24),
 
               decoration: BoxDecoration(
 
@@ -495,9 +373,11 @@ class _CalorieScreenState
                   SizedBox(height: 10),
 
                   Text(
+
                     "Calories Tracker",
 
                     style: TextStyle(
+
                       color: Colors.white,
 
                       fontSize: 28,
@@ -510,6 +390,7 @@ class _CalorieScreenState
                   SizedBox(height: 6),
 
                   Text(
+
                     "Theo dõi calories & dinh dưỡng",
 
                     style: TextStyle(
@@ -523,34 +404,20 @@ class _CalorieScreenState
 
             const SizedBox(height: 24),
 
-            /// ================= INPUT CARD =================
+            /// INPUT CARD
             Container(
 
               padding:
-              const EdgeInsets.all(
-                20,
-              ),
+              const EdgeInsets.all(20),
 
               decoration: BoxDecoration(
+
                 color: Colors.white,
 
                 borderRadius:
                 BorderRadius.circular(
                   28,
                 ),
-
-                boxShadow: [
-
-                  BoxShadow(
-                    color:
-                    Colors.black
-                        .withOpacity(
-                      0.05,
-                    ),
-
-                    blurRadius: 10,
-                  ),
-                ],
               ),
 
               child: Column(
@@ -576,17 +443,12 @@ class _CalorieScreenState
 
                   const SizedBox(height: 10),
 
-                  /// GENDER
                   DropdownButtonFormField(
 
                     value: gender,
 
                     decoration:
                     InputDecoration(
-                      filled: true,
-
-                      fillColor:
-                      Colors.white,
 
                       border:
                       OutlineInputBorder(
@@ -618,17 +480,12 @@ class _CalorieScreenState
 
                   const SizedBox(height: 14),
 
-                  /// ACTIVITY
                   DropdownButtonFormField(
 
                     value: activity,
 
                     decoration:
                     InputDecoration(
-                      filled: true,
-
-                      fillColor:
-                      Colors.white,
 
                       border:
                       OutlineInputBorder(
@@ -668,17 +525,12 @@ class _CalorieScreenState
 
                   const SizedBox(height: 14),
 
-                  /// GOAL
                   DropdownButtonFormField(
 
                     value: goal,
 
                     decoration:
                     InputDecoration(
-                      filled: true,
-
-                      fillColor:
-                      Colors.white,
 
                       border:
                       OutlineInputBorder(
@@ -716,12 +568,9 @@ class _CalorieScreenState
 
                   const SizedBox(height: 24),
 
-                  /// BUTTON
                   SizedBox(
 
-                    width:
-                    double.infinity,
-
+                    width: double.infinity,
                     height: 56,
 
                     child:
@@ -753,10 +602,6 @@ class _CalorieScreenState
                       label:
                       const Text(
                         "Tính Calories",
-
-                        style: TextStyle(
-                          fontSize: 18,
-                        ),
                       ),
                     ),
                   ),
@@ -766,16 +611,14 @@ class _CalorieScreenState
 
             const SizedBox(height: 28),
 
-            /// ================= RESULT =================
+            /// RESULT
             if (result > 0)
               Container(
 
                 width: double.infinity,
 
                 padding:
-                const EdgeInsets.all(
-                  24,
-                ),
+                const EdgeInsets.all(24),
 
                 decoration: BoxDecoration(
 
@@ -809,13 +652,8 @@ class _CalorieScreenState
                       progressColor:
                       Colors.orange,
 
-                      backgroundColor:
-                      Colors.orange
-                          .withOpacity(
-                        0.15,
-                      ),
-
                       center: Column(
+
                         mainAxisAlignment:
                         MainAxisAlignment
                             .center,
@@ -823,6 +661,7 @@ class _CalorieScreenState
                         children: [
 
                           Text(
+
                             result
                                 .toStringAsFixed(
                               0,
@@ -830,6 +669,7 @@ class _CalorieScreenState
 
                             style:
                             const TextStyle(
+
                               fontSize:
                               36,
 
@@ -847,367 +687,56 @@ class _CalorieScreenState
 
                     const SizedBox(height: 24),
 
-                    Container(
+                    Text(
+                      getHealthLevel(),
 
-                      padding:
-                      const EdgeInsets.symmetric(
-                        horizontal: 18,
-                        vertical: 10,
-                      ),
+                      style: const TextStyle(
 
-                      decoration:
-                      BoxDecoration(
-                        color:
-                        Colors.orange
-                            .shade100,
+                        fontSize: 20,
 
-                        borderRadius:
-                        BorderRadius.circular(
-                          30,
-                        ),
-                      ),
-
-                      child: Text(
-                        getHealthLevel(),
-
-                        style: TextStyle(
-                          color:
-                          Colors.orange
-                              .shade900,
-
-                          fontWeight:
-                          FontWeight.bold,
-                        ),
+                        fontWeight:
+                        FontWeight.bold,
                       ),
                     ),
 
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 20),
 
-                    /// GOAL CARD
-                    Container(
+                    Text(
+                      getAdvice(),
 
-                      width:
-                      double.infinity,
-
-                      padding:
-                      const EdgeInsets.all(
-                        18,
-                      ),
-
-                      decoration:
-                      BoxDecoration(
-                        gradient:
-                        LinearGradient(
-                          colors: [
-
-                            Colors.orange
-                                .shade100,
-
-                            Colors.orange
-                                .shade50,
-                          ],
-                        ),
-
-                        borderRadius:
-                        BorderRadius.circular(
-                          22,
-                        ),
-                      ),
-
-                      child: Row(
-                        children: [
-
-                          const Icon(
-                            Icons.flag,
-                            color:
-                            Colors.orange,
-                          ),
-
-                          const SizedBox(
-                            width: 10,
-                          ),
-
-                          Expanded(
-                            child: Text(
-                              "Mục tiêu hiện tại: $goal",
-
-                              style:
-                              const TextStyle(
-                                fontWeight:
-                                FontWeight
-                                    .bold,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+                      textAlign:
+                      TextAlign.center,
                     ),
 
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 30),
 
-                    /// DAILY TARGET
                     Row(
+
+                      mainAxisAlignment:
+                      MainAxisAlignment
+                          .spaceEvenly,
+
                       children: [
 
-                        macroCard(
-                          "Protein",
-                          "${protein.toStringAsFixed(0)}g",
-                          Colors.red,
-                          Icons.egg_alt,
+                        Text(
+                          "🥩 ${protein.toStringAsFixed(0)}g",
                         ),
 
-                        macroCard(
-                          "Carb",
-                          "${carb.toStringAsFixed(0)}g",
-                          Colors.orange,
-                          Icons.bakery_dining,
+                        Text(
+                          "🍞 ${carb.toStringAsFixed(0)}g",
                         ),
 
-                        macroCard(
-                          "Fat",
-                          "${fat.toStringAsFixed(0)}g",
-                          Colors.blue,
-                          Icons.opacity,
+                        Text(
+                          "🥑 ${fat.toStringAsFixed(0)}g",
                         ),
                       ],
                     ),
 
-                    const SizedBox(height: 26),
+                    const SizedBox(height: 30),
 
-                    /// WATER
-                    Container(
-
-                      width:
-                      double.infinity,
-
-                      padding:
-                      const EdgeInsets.all(
-                        20,
-                      ),
-
-                      decoration:
-                      BoxDecoration(
-                        color:
-                        Colors.blue
-                            .shade50,
-
-                        borderRadius:
-                        BorderRadius.circular(
-                          24,
-                        ),
-                      ),
-
-                      child: Row(
-                        children: [
-
-                          CircleAvatar(
-                            radius: 28,
-
-                            backgroundColor:
-                            Colors.blue
-                                .shade100,
-
-                            child: const Icon(
-                              Icons.water_drop,
-
-                              color:
-                              Colors.blue,
-                            ),
-                          ),
-
-                          const SizedBox(
-                            width: 16,
-                          ),
-
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment:
-                              CrossAxisAlignment
-                                  .start,
-
-                              children: [
-
-                                const Text(
-                                  "Nước cần uống",
-
-                                  style:
-                                  TextStyle(
-                                    fontWeight:
-                                    FontWeight
-                                        .bold,
-
-                                    fontSize:
-                                    16,
-                                  ),
-                                ),
-
-                                const SizedBox(
-                                  height: 5,
-                                ),
-
-                                Text(
-                                  "${(weight * 0.035).toStringAsFixed(1)} L mỗi ngày",
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(height: 24),
-
-                    /// MEAL PLAN
-                    Container(
-
-                      width:
-                      double.infinity,
-
-                      padding:
-                      const EdgeInsets.all(
-                        20,
-                      ),
-
-                      decoration:
-                      BoxDecoration(
-                        color:
-                        Colors.green
-                            .shade50,
-
-                        borderRadius:
-                        BorderRadius.circular(
-                          24,
-                        ),
-                      ),
-
-                      child: Column(
-                        crossAxisAlignment:
-                        CrossAxisAlignment
-                            .start,
-
-                        children: [
-
-                          const Row(
-                            children: [
-
-                              Icon(
-                                Icons.restaurant,
-                                color:
-                                Colors.green,
-                              ),
-
-                              SizedBox(
-                                width: 8,
-                              ),
-
-                              Text(
-                                "Gợi ý bữa ăn",
-
-                                style:
-                                TextStyle(
-                                  fontWeight:
-                                  FontWeight
-                                      .bold,
-
-                                  fontSize:
-                                  18,
-                                ),
-                              ),
-                            ],
-                          ),
-
-                          const SizedBox(
-                            height: 18,
-                          ),
-
-                          foodTile(
-                            "🍳",
-                            "Bữa sáng",
-                            "Trứng, yến mạch, sữa",
-                          ),
-
-                          foodTile(
-                            "🍗",
-                            "Bữa trưa",
-                            "Cơm, ức gà, rau xanh",
-                          ),
-
-                          foodTile(
-                            "🥗",
-                            "Bữa tối",
-                            "Salad, cá hồi, trái cây",
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(height: 24),
-
-                    /// ADVICE
-                    Container(
-
-                      width:
-                      double.infinity,
-
-                      padding:
-                      const EdgeInsets.all(
-                        20,
-                      ),
-
-                      decoration:
-                      BoxDecoration(
-                        color:
-                        Colors.orange
-                            .shade50,
-
-                        borderRadius:
-                        BorderRadius.circular(
-                          22,
-                        ),
-                      ),
-
-                      child: Column(
-                        crossAxisAlignment:
-                        CrossAxisAlignment
-                            .start,
-
-                        children: [
-
-                          const Text(
-                            "💡 Lời khuyên",
-
-                            style: TextStyle(
-                              fontWeight:
-                              FontWeight.bold,
-
-                              fontSize: 18,
-                            ),
-                          ),
-
-                          const SizedBox(
-                            height: 12,
-                          ),
-
-                          Text(
-                            getAdvice(),
-
-                            style:
-                            const TextStyle(
-                              height: 1.5,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(height: 28),
-
-                    /// SAVE
                     SizedBox(
 
-                      width:
-                      double.infinity,
-
+                      width: double.infinity,
                       height: 55,
 
                       child:
@@ -1228,8 +757,10 @@ class _CalorieScreenState
                           ),
                         ),
 
-                        onPressed:
-                        saveCalories,
+                        onPressed: () async {
+
+                          await saveCalories();
+                        },
 
                         icon:
                         const Icon(
@@ -1239,10 +770,6 @@ class _CalorieScreenState
                         label:
                         const Text(
                           "Lưu lịch sử",
-
-                          style: TextStyle(
-                            fontSize: 17,
-                          ),
                         ),
                       ),
                     ),

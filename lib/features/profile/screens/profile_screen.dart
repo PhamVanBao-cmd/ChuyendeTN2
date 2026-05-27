@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../auth/screens/login_screen.dart';
 
@@ -44,38 +45,135 @@ class _ProfileScreenState
 
   String? imageUrl;
 
+  /// ================= SAVE =================
+  Future<void> saveProfile() async {
+
+    final prefs =
+    await SharedPreferences.getInstance();
+
+    await prefs.setString(
+      'name',
+      nameController.text,
+    );
+
+    await prefs.setString(
+      'age',
+      ageController.text,
+    );
+
+    await prefs.setString(
+      'height',
+      heightController.text,
+    );
+
+    await prefs.setString(
+      'weight',
+      weightController.text,
+    );
+
+    await prefs.setString(
+      'goal',
+      goalController.text,
+    );
+
+    await prefs.setBool(
+      'darkMode',
+      darkMode,
+    );
+
+    await prefs.setBool(
+      'notification',
+      notification,
+    );
+
+    if (imageFile != null) {
+
+      await prefs.setString(
+        'imagePath',
+        imageFile!.path,
+      );
+    }
+
+    if (imageUrl != null) {
+
+      await prefs.setString(
+        'imageUrl',
+        imageUrl!,
+      );
+    }
+  }
+
+  /// ================= LOAD =================
+  Future<void> loadProfile() async {
+
+    final prefs =
+    await SharedPreferences.getInstance();
+
+    nameController.text =
+        prefs.getString('name') ??
+            user?.displayName ??
+            "";
+
+    ageController.text =
+        prefs.getString('age') ??
+            "20";
+
+    heightController.text =
+        prefs.getString('height') ??
+            "170";
+
+    weightController.text =
+        prefs.getString('weight') ??
+            "65";
+
+    goalController.text =
+        prefs.getString('goal') ??
+            "Duy trì sức khỏe";
+
+    darkMode =
+        prefs.getBool('darkMode') ??
+            false;
+
+    notification =
+        prefs.getBool('notification') ??
+            true;
+
+    imageUrl =
+        prefs.getString('imageUrl');
+
+    final imagePath =
+    prefs.getString('imagePath');
+
+    if (imagePath != null) {
+
+      imageFile =
+          File(imagePath);
+    }
+
+    setState(() {});
+  }
+
   @override
   void initState() {
+
     super.initState();
 
     nameController =
-        TextEditingController(
-          text:
-          user?.displayName ?? "",
-        );
+        TextEditingController();
 
     ageController =
-        TextEditingController(
-          text: "20",
-        );
+        TextEditingController();
 
     heightController =
-        TextEditingController(
-          text: "170",
-        );
+        TextEditingController();
 
     weightController =
-        TextEditingController(
-          text: "65",
-        );
+        TextEditingController();
 
     goalController =
-        TextEditingController(
-          text:
-          "Duy trì sức khỏe",
-        );
+        TextEditingController();
 
-    imageUrl = user?.photoURL;
+    loadProfile();
   }
 
   @override
@@ -111,9 +209,12 @@ class _ProfileScreenState
     }
 
     setState(() {
+
       imageFile =
           File(pickedFile.path);
     });
+
+    await saveProfile();
 
     await uploadImage();
   }
@@ -128,7 +229,6 @@ class _ProfileScreenState
 
     try {
 
-      /// THỬ UPLOAD FIREBASE STORAGE
       final ref =
       FirebaseStorage.instance
           .ref()
@@ -147,8 +247,11 @@ class _ProfileScreenState
           .updatePhotoURL(url);
 
       setState(() {
+
         imageUrl = url;
       });
+
+      await saveProfile();
 
       ScaffoldMessenger.of(
         context,
@@ -162,12 +265,12 @@ class _ProfileScreenState
 
     } catch (e) {
 
-      /// FIREBASE STORAGE CHƯA BẬT
-      /// => DÙNG ẢNH LOCAL
-
       setState(() {
+
         imageUrl = null;
       });
+
+      await saveProfile();
 
       ScaffoldMessenger.of(
         context,
@@ -246,6 +349,8 @@ class _ProfileScreenState
       nameController.text,
     );
 
+    await saveProfile();
+
     setState(() {});
 
     ScaffoldMessenger.of(
@@ -322,117 +427,6 @@ class _ProfileScreenState
     );
   }
 
-  /// ================= INFO CARD =================
-  Widget infoCard(
-      IconData icon,
-      String title,
-      String value,
-      Color color,
-      ) {
-
-    return Container(
-      margin:
-      const EdgeInsets.only(
-        bottom: 14,
-      ),
-
-      padding:
-      const EdgeInsets.all(18),
-
-      decoration: BoxDecoration(
-        color: Colors.white,
-
-        borderRadius:
-        BorderRadius.circular(
-          28,
-        ),
-
-        boxShadow: const [
-
-          BoxShadow(
-            color:
-            Colors.black12,
-
-            blurRadius: 8,
-
-            offset:
-            Offset(0, 4),
-          ),
-        ],
-      ),
-
-      child: Row(
-        children: [
-
-          Container(
-            padding:
-            const EdgeInsets.all(
-              14,
-            ),
-
-            decoration:
-            BoxDecoration(
-              color:
-              color.withOpacity(
-                0.15,
-              ),
-
-              shape:
-              BoxShape.circle,
-            ),
-
-            child: Icon(
-              icon,
-              color: color,
-            ),
-          ),
-
-          const SizedBox(width: 15),
-
-          Expanded(
-            child: Column(
-              crossAxisAlignment:
-              CrossAxisAlignment
-                  .start,
-
-              children: [
-
-                Text(
-                  title,
-
-                  style:
-                  const TextStyle(
-                    color:
-                    Colors.grey,
-
-                    fontSize: 13,
-                  ),
-                ),
-
-                const SizedBox(
-                  height: 5,
-                ),
-
-                Text(
-                  value,
-
-                  style:
-                  const TextStyle(
-                    fontWeight:
-                    FontWeight
-                        .bold,
-
-                    fontSize: 17,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   /// ================= INPUT =================
   Widget customInput(
       TextEditingController
@@ -450,8 +444,11 @@ class _ProfileScreenState
       child: TextField(
         controller: controller,
 
-        onChanged: (_) {
+        onChanged: (_) async {
+
           setState(() {});
+
+          await saveProfile();
         },
 
         decoration:
@@ -504,6 +501,17 @@ class _ProfileScreenState
         title: const Text(
           "Hồ sơ cá nhân",
         ),
+
+        actions: [
+
+          IconButton(
+            onPressed: logout,
+
+            icon: const Icon(
+              Icons.logout,
+            ),
+          ),
+        ],
       ),
 
       body: SingleChildScrollView(
@@ -621,13 +629,10 @@ class _ProfileScreenState
                                 imageUrl ==
                                     null
                                 ? Text(
-                              (user?.displayName !=
-                                  null &&
-                                  user!
-                                      .displayName!
-                                      .isNotEmpty)
-                                  ? user!
-                                  .displayName![0]
+                              (nameController.text
+                                  .isNotEmpty)
+                                  ? nameController
+                                  .text[0]
                                   : "U",
 
                               style:
@@ -690,11 +695,9 @@ class _ProfileScreenState
 
                   /// NAME
                   Text(
-                    user?.displayName
-                        ?.isNotEmpty ==
-                        true
-                        ? user!
-                        .displayName!
+                    nameController.text
+                        .isNotEmpty
+                        ? nameController.text
                         : "Người dùng",
 
                     style:
@@ -762,7 +765,144 @@ class _ProfileScreenState
               ),
             ),
 
-            const SizedBox(height: 40),
+            const SizedBox(height: 30),
+
+            /// ================= PROFILE FORM =================
+            customInput(
+              nameController,
+              "Tên",
+              Icons.person,
+            ),
+
+            customInput(
+              ageController,
+              "Tuổi",
+              Icons.cake,
+            ),
+
+            customInput(
+              heightController,
+              "Chiều cao (cm)",
+              Icons.height,
+            ),
+
+            customInput(
+              weightController,
+              "Cân nặng (kg)",
+              Icons.monitor_weight,
+            ),
+
+            customInput(
+              goalController,
+              "Mục tiêu",
+              Icons.flag,
+            ),
+
+            const SizedBox(height: 20),
+
+            /// BMI
+            Container(
+              width: double.infinity,
+
+              padding:
+              const EdgeInsets.all(20),
+
+              decoration:
+              BoxDecoration(
+                color: bmiColor(),
+
+                borderRadius:
+                BorderRadius.circular(
+                  25,
+                ),
+              ),
+
+              child: Column(
+                children: [
+
+                  const Text(
+                    "BMI",
+
+                    style: TextStyle(
+                      color: Colors.white,
+
+                      fontSize: 18,
+                    ),
+                  ),
+
+                  const SizedBox(
+                    height: 10,
+                  ),
+
+                  Text(
+                    bmi.toStringAsFixed(1),
+
+                    style:
+                    const TextStyle(
+                      color:
+                      Colors.white,
+
+                      fontSize: 38,
+
+                      fontWeight:
+                      FontWeight.bold,
+                    ),
+                  ),
+
+                  Text(
+                    bmiText(),
+
+                    style:
+                    const TextStyle(
+                      color:
+                      Colors.white70,
+
+                      fontSize: 18,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 30),
+
+            /// SAVE BUTTON
+            SizedBox(
+              width: double.infinity,
+
+              height: 55,
+
+              child: ElevatedButton(
+                onPressed:
+                updateProfile,
+
+                style:
+                ElevatedButton.styleFrom(
+                  backgroundColor:
+                  Colors.blue,
+
+                  shape:
+                  RoundedRectangleBorder(
+                    borderRadius:
+                    BorderRadius.circular(
+                      20,
+                    ),
+                  ),
+                ),
+
+                child: const Text(
+                  "Lưu hồ sơ",
+
+                  style: TextStyle(
+                    color: Colors.white,
+
+                    fontSize: 18,
+                  ),
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 30),
           ],
         ),
       ),

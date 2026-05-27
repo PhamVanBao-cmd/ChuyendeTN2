@@ -29,24 +29,58 @@ class _StepScreenState extends State<StepScreen> {
   /// ================= INIT =================
   @override
   void initState() {
+
     super.initState();
 
-    loadGoal();
-
-    requestPermission();
+    loadData().then((_) {
+      requestPermission();
+    });
   }
 
-  /// ================= LOAD GOAL =================
-  Future<void> loadGoal() async {
+  /// ================= LOAD DATA =================
+  Future<void> loadData() async {
 
     final prefs =
     await SharedPreferences.getInstance();
 
     setState(() {
+
       goal =
           prefs.getInt("stepGoal") ??
               10000;
+
+      steps =
+          prefs.getInt("todaySteps") ??
+              0;
+
+      initialSteps =
+          prefs.getInt("initialSteps");
     });
+  }
+
+  /// ================= SAVE DATA =================
+  Future<void> saveData() async {
+
+    final prefs =
+    await SharedPreferences.getInstance();
+
+    await prefs.setInt(
+      "stepGoal",
+      goal,
+    );
+
+    await prefs.setInt(
+      "todaySteps",
+      steps,
+    );
+
+    if (initialSteps != null) {
+
+      await prefs.setInt(
+        "initialSteps",
+        initialSteps!,
+      );
+    }
   }
 
   /// ================= SAVE GOAL =================
@@ -87,25 +121,34 @@ class _StepScreenState extends State<StepScreen> {
     stepStream =
         Pedometer.stepCountStream.listen(
 
-              (StepCount event) {
+              (StepCount event) async {
+
+            /// LƯU MỐC BAN ĐẦU
+            initialSteps ??= event.steps;
+
+            /// TÍNH BƯỚC HÔM NAY
+            final currentSteps =
+                event.steps - initialSteps!;
 
             setState(() {
 
-              /// lấy mốc bước đầu tiên
-              initialSteps ??= event.steps;
-
-              /// số bước thực tế hôm nay
               steps =
-                  event.steps - initialSteps!;
+              currentSteps < 0
+                  ? 0
+                  : currentSteps;
 
               status =
               "Đang theo dõi";
             });
+
+            /// SAVE
+            await saveData();
           },
 
           onError: (e) {
 
             setState(() {
+
               status =
               "Thiết bị không hỗ trợ";
             });
@@ -113,10 +156,31 @@ class _StepScreenState extends State<StepScreen> {
         );
   }
 
+  /// ================= RESET DAILY =================
+  Future<void> resetTodaySteps() async {
+
+    final prefs =
+    await SharedPreferences.getInstance();
+
+    await prefs.remove(
+      "initialSteps",
+    );
+
+    initialSteps = null;
+
+    steps = 0;
+
+    await saveData();
+
+    setState(() {});
+  }
+
   /// ================= PROGRESS =================
   double get progress {
 
-    if (steps >= goal) return 1;
+    if (steps >= goal) {
+      return 1;
+    }
 
     return steps / goal;
   }
@@ -124,25 +188,22 @@ class _StepScreenState extends State<StepScreen> {
   /// ================= CALORIES =================
   double get calories {
 
-    /// tính chính xác hơn
     return steps * 0.045;
   }
 
   /// ================= DISTANCE =================
   double get distance {
 
-    /// trung bình 1 bước = 0.75m
     return steps * 0.00075;
   }
 
   /// ================= TIME WALK =================
   double get walkMinutes {
 
-    /// trung bình 100 bước/phút
     return steps / 100;
   }
 
-  /// ================= BMI STYLE STATUS =================
+  /// ================= STEP LEVEL =================
   String get stepLevel {
 
     if (steps < 3000) {
@@ -460,6 +521,15 @@ class _StepScreenState extends State<StepScreen> {
               Icons.flag,
             ),
           ),
+
+          IconButton(
+
+            onPressed: resetTodaySteps,
+
+            icon: const Icon(
+              Icons.refresh,
+            ),
+          ),
         ],
       ),
 
@@ -703,7 +773,6 @@ class _StepScreenState extends State<StepScreen> {
 
             const SizedBox(height: 22),
 
-            /// ================= STATS =================
             Row(
               children: [
 
@@ -751,7 +820,6 @@ class _StepScreenState extends State<StepScreen> {
 
             const SizedBox(height: 25),
 
-            /// ================= HEALTH =================
             healthCard(
               Icons.favorite,
               "Trạng thái vận động",
@@ -773,110 +841,6 @@ class _StepScreenState extends State<StepScreen> {
                   ? "Bạn nên nghỉ ngơi và giãn cơ."
                   : "Hãy vận động thêm để đạt mục tiêu.",
               Colors.indigo,
-            ),
-
-            const SizedBox(height: 25),
-
-            /// ================= BENEFITS =================
-            Container(
-
-              width: double.infinity,
-
-              padding:
-              const EdgeInsets.all(22),
-
-              decoration: BoxDecoration(
-
-                color: Colors.white,
-
-                borderRadius:
-                BorderRadius.circular(28),
-
-                boxShadow: const [
-
-                  BoxShadow(
-                    color: Colors.black12,
-                    blurRadius: 8,
-                  ),
-                ],
-              ),
-
-              child: const Column(
-
-                crossAxisAlignment:
-                CrossAxisAlignment.start,
-
-                children: [
-
-                  Row(
-                    children: [
-
-                      Icon(
-                        Icons.tips_and_updates,
-                        color: Colors.orange,
-                      ),
-
-                      SizedBox(width: 10),
-
-                      Text(
-                        "Lợi ích đi bộ",
-
-                        style: TextStyle(
-                          fontSize: 20,
-
-                          fontWeight:
-                          FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  SizedBox(height: 20),
-
-                  Text(
-                    "❤️ Cải thiện tim mạch",
-                    style: TextStyle(
-                      fontSize: 16,
-                    ),
-                  ),
-
-                  SizedBox(height: 12),
-
-                  Text(
-                    "🔥 Đốt cháy calories hiệu quả",
-                    style: TextStyle(
-                      fontSize: 16,
-                    ),
-                  ),
-
-                  SizedBox(height: 12),
-
-                  Text(
-                    "😴 Giúp ngủ ngon và giảm stress",
-                    style: TextStyle(
-                      fontSize: 16,
-                    ),
-                  ),
-
-                  SizedBox(height: 12),
-
-                  Text(
-                    "💪 Tăng cường sức khỏe tổng thể",
-                    style: TextStyle(
-                      fontSize: 16,
-                    ),
-                  ),
-
-                  SizedBox(height: 12),
-
-                  Text(
-                    "🧠 Cải thiện tinh thần tích cực",
-                    style: TextStyle(
-                      fontSize: 16,
-                    ),
-                  ),
-                ],
-              ),
             ),
 
             const SizedBox(height: 40),

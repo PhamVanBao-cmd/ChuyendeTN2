@@ -15,6 +15,13 @@ class NotificationService {
 
     tz.initializeTimeZones();
 
+    /// timezone VN
+    tz.setLocalLocation(
+      tz.getLocation(
+        'Asia/Ho_Chi_Minh',
+      ),
+    );
+
     const AndroidInitializationSettings
     androidSettings =
     AndroidInitializationSettings(
@@ -31,16 +38,44 @@ class NotificationService {
       settings,
     );
 
-    /// ================= PERMISSION =================
+    /// Android 13+
     await notifications
         .resolvePlatformSpecificImplementation<
         AndroidFlutterLocalNotificationsPlugin>()
         ?.requestNotificationsPermission();
 
+    /// Android 12+
     await notifications
         .resolvePlatformSpecificImplementation<
         AndroidFlutterLocalNotificationsPlugin>()
         ?.requestExactAlarmsPermission();
+  }
+
+  /// ================= TEST =================
+  static Future<void> testNotification() async {
+
+    const AndroidNotificationDetails
+    androidDetails =
+    AndroidNotificationDetails(
+
+      'test_channel',
+      'Test Notification',
+
+      importance: Importance.max,
+      priority: Priority.high,
+    );
+
+    const NotificationDetails details =
+    NotificationDetails(
+      android: androidDetails,
+    );
+
+    await notifications.show(
+      999,
+      'TEST THÔNG BÁO',
+      'Thông báo đang hoạt động 🎉',
+      details,
+    );
   }
 
   /// ================= SIMPLE =================
@@ -52,6 +87,7 @@ class NotificationService {
     const AndroidNotificationDetails
     androidDetails =
     AndroidNotificationDetails(
+
       'health_channel',
       'Health Notifications',
 
@@ -87,6 +123,7 @@ class NotificationService {
     );
 
     await notifications.zonedSchedule(
+
       1,
 
       'Nhắc uống nước 💧',
@@ -96,7 +133,9 @@ class NotificationService {
       time,
 
       const NotificationDetails(
+
         android: AndroidNotificationDetails(
+
           'water_channel',
           'Water Reminder',
 
@@ -119,8 +158,13 @@ class NotificationService {
       int minute,
       ) async {
 
+    /// xóa lịch cũ
+    await notifications.cancel(2);
+
     final now =
-    tz.TZDateTime.now(tz.local);
+    tz.TZDateTime.now(
+      tz.local,
+    );
 
     tz.TZDateTime scheduledDate =
     tz.TZDateTime(
@@ -135,7 +179,7 @@ class NotificationService {
       minute,
     );
 
-    /// nếu đã qua giờ hôm nay
+    /// nếu qua giờ hôm nay
     if (scheduledDate.isBefore(now)) {
 
       scheduledDate =
@@ -144,7 +188,12 @@ class NotificationService {
           );
     }
 
+    print(
+      "Sleep reminder: $scheduledDate",
+    );
+
     await notifications.zonedSchedule(
+
       2,
 
       'Đến giờ đi ngủ 🌙',
@@ -154,14 +203,19 @@ class NotificationService {
       scheduledDate,
 
       const NotificationDetails(
+
         android: AndroidNotificationDetails(
+
           'sleep_channel',
           'Sleep Reminder',
 
           importance: Importance.max,
+
           priority: Priority.high,
 
           playSound: true,
+
+          enableVibration: true,
         ),
       ),
 
@@ -176,7 +230,7 @@ class NotificationService {
     );
   }
 
-  /// ================= CANCEL SLEEP =================
+  /// ================= CANCEL =================
   static Future<void>
   cancelSleepReminder() async {
 

@@ -52,13 +52,16 @@ dependencies:
 
   flutter_local_notifications: ^17.2.1
   timezone: ^0.9.4
+  flutter_timezone: ^4.1.0
 
   shared_preferences: ^2.2.3
 
   flutter_foreground_task: ^8.8.0
 
   android_alarm_manager_plus: ^4.0.5
+
   google_mlkit_commons: ^0.11.0
+
 
 
 dev_dependencies:
