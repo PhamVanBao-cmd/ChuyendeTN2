@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "612547382090",
+    "project_id": "theodoisuckhoe-app",
+    "storage_bucket": "theodoisuckhoe-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:612547382090:android:f9749308422720e8e98fb3",
+        "android_client_info": {
+          "package_name": "com.example.theodoisuckhoe"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "612547382090-ak24agm89tgcr0vqopvutprr59dq0r7t.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAKvnboF4Q5MCnG-QS0UwsOWu6LrnfAOXQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "612547382090-ak24agm89tgcr0vqopvutprr59dq0r7t.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

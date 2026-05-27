@@ -9,229 +9,670 @@ class RegisterScreen extends StatefulWidget {
   State<RegisterScreen> createState() => _RegisterScreenState();
 }
 
-class _RegisterScreenState extends State<RegisterScreen> {
+class _RegisterScreenState extends State<RegisterScreen>
+    with SingleTickerProviderStateMixin {
+
   final email = TextEditingController();
   final password = TextEditingController();
   final confirm = TextEditingController();
 
   bool loading = false;
+
   bool obscure1 = true;
   bool obscure2 = true;
 
-  /// 🔥 CHẶN KÝ TỰ (chỉ cho chữ + số + @)
+  late AnimationController animationController;
+
+  late Animation<double> fadeAnimation;
+
+  /// ================= PASSWORD FORMAT =================
   final passwordFormatter =
-  FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9@]'));
+  FilteringTextInputFormatter.allow(
+    RegExp(r'[a-zA-Z0-9@]'),
+  );
 
+  @override
+  void initState() {
+    super.initState();
+
+    animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    );
+
+    fadeAnimation = Tween<double>(
+      begin: 0,
+      end: 1,
+    ).animate(
+      CurvedAnimation(
+        parent: animationController,
+        curve: Curves.easeInOut,
+      ),
+    );
+
+    animationController.forward();
+  }
+
+  @override
+  void dispose() {
+
+    email.dispose();
+    password.dispose();
+    confirm.dispose();
+
+    animationController.dispose();
+
+    super.dispose();
+  }
+
+  /// ================= SHOW MESSAGE =================
+  void showMsg(String msg, {Color? color}) {
+
+    ScaffoldMessenger.of(context).showSnackBar(
+
+      SnackBar(
+        backgroundColor: color,
+
+        behavior: SnackBarBehavior.floating,
+
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(15),
+        ),
+
+        content: Text(
+          msg,
+          style: const TextStyle(
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// ================= REGISTER =================
   Future<void> register() async {
-    String pass = password.text;
 
-    /// ❌ rỗng
-    if (email.text.isEmpty || pass.isEmpty) {
-      showMsg("❌ Nhập đầy đủ thông tin");
+    FocusScope.of(context).unfocus();
+
+    final userEmail = email.text.trim();
+
+    final pass = password.text.trim();
+
+    final confirmPass = confirm.text.trim();
+
+    /// EMPTY
+    if (userEmail.isEmpty ||
+        pass.isEmpty ||
+        confirmPass.isEmpty) {
+
+      showMsg(
+        "Vui lòng nhập đầy đủ thông tin",
+        color: Colors.red,
+      );
+
       return;
     }
 
-    /// ❌ độ dài
+    /// EMAIL INVALID
+    if (!RegExp(
+      r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+    ).hasMatch(userEmail)) {
+
+      showMsg(
+        "Email không hợp lệ",
+        color: Colors.red,
+      );
+
+      return;
+    }
+
+    /// LENGTH
     if (pass.length < 6) {
-      showMsg("❌ Mật khẩu ≥ 6 ký tự");
+
+      showMsg(
+        "Mật khẩu phải từ 6 ký tự",
+        color: Colors.red,
+      );
+
       return;
     }
 
-    /// ❌ ký tự sai
-    if (!RegExp(r'^[a-zA-Z0-9@]+$').hasMatch(pass)) {
-      showMsg("❌ Chỉ dùng chữ, số và @");
+    /// SPECIAL VALIDATION
+    if (!RegExp(
+      r'^(?=.*[A-Z])(?=.*[0-9])[a-zA-Z0-9@]+$',
+    ).hasMatch(pass)) {
+
+      showMsg(
+        "Mật khẩu cần có chữ HOA và số",
+        color: Colors.red,
+      );
+
       return;
     }
 
-    /// ❌ chưa có chữ hoa + số
-    if (!RegExp(r'^(?=.*[A-Z])(?=.*[0-9])').hasMatch(pass)) {
-      showMsg("❌ Phải có chữ HOA và số");
+    /// MATCH
+    if (pass != confirmPass) {
+
+      showMsg(
+        "Mật khẩu xác nhận không khớp",
+        color: Colors.red,
+      );
+
       return;
     }
 
-    /// ❌ không khớp
-    if (pass != confirm.text) {
-      showMsg("❌ Mật khẩu không khớp");
-      return;
-    }
-
-    setState(() => loading = true);
+    setState(() {
+      loading = true;
+    });
 
     try {
-      await FirebaseAuth.instance.createUserWithEmailAndPassword(
-        email: email.text.trim(),
+
+      await FirebaseAuth.instance
+          .createUserWithEmailAndPassword(
+        email: userEmail,
         password: pass,
       );
 
-      Navigator.pop(context);
+      if (!mounted) return;
 
-      showMsg("✅ Đăng ký thành công");
+      showMsg(
+        "Đăng ký thành công 🎉",
+        color: Colors.green,
+      );
+
+      Future.delayed(
+        const Duration(milliseconds: 1200),
+            () {
+
+          Navigator.pop(context);
+        },
+      );
+
+    } on FirebaseAuthException catch (e) {
+
+      String msg = "Đăng ký thất bại";
+
+      if (e.code == 'email-already-in-use') {
+        msg = "Email đã tồn tại";
+      }
+
+      if (e.code == 'invalid-email') {
+        msg = "Email không hợp lệ";
+      }
+
+      if (e.code == 'weak-password') {
+        msg = "Mật khẩu quá yếu";
+      }
+
+      showMsg(
+        msg,
+        color: Colors.red,
+      );
+
     } catch (e) {
-      showMsg("❌ Lỗi: $e");
+
+      showMsg(
+        "Lỗi: $e",
+        color: Colors.red,
+      );
     }
 
-    setState(() => loading = false);
+    if (mounted) {
+
+      setState(() {
+        loading = false;
+      });
+    }
   }
 
-  void showMsg(String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(msg)),
+  /// ================= PASSWORD CHECK =================
+  Widget passwordRule(
+      String text,
+      bool valid,
+      ) {
+
+    return Row(
+      children: [
+
+        Icon(
+          valid
+              ? Icons.check_circle
+              : Icons.cancel,
+
+          size: 18,
+
+          color:
+          valid
+              ? Colors.green
+              : Colors.red,
+        ),
+
+        const SizedBox(width: 8),
+
+        Text(
+          text,
+
+          style: TextStyle(
+            color:
+            valid
+                ? Colors.green
+                : Colors.red,
+
+            fontSize: 13,
+          ),
+        ),
+      ],
     );
   }
 
   @override
   Widget build(BuildContext context) {
+
+    final hasUpper =
+    RegExp(r'[A-Z]').hasMatch(password.text);
+
+    final hasNumber =
+    RegExp(r'[0-9]').hasMatch(password.text);
+
+    final hasLength =
+        password.text.length >= 6;
+
     return Scaffold(
+
       body: Container(
+
         width: double.infinity,
         height: double.infinity,
 
-        /// 🌈 BACKGROUND
         decoration: const BoxDecoration(
+
           gradient: LinearGradient(
-            colors: [Color(0xFF11998e), Color(0xFF38ef7d)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
+
+            colors: [
+              Color(0xFF11998e),
+              Color(0xFF38ef7d),
+            ],
           ),
         ),
 
-        /// 🔥 CENTER FIX
-        child: Center(
-          child: SingleChildScrollView(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 380),
-              child: Card(
-                elevation: 20,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(25),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
+        child: SafeArea(
 
-                      /// ❤️ ICON
-                      Container(
-                        padding: const EdgeInsets.all(18),
-                        decoration: BoxDecoration(
-                          color: Colors.green.withOpacity(0.1),
-                          shape: BoxShape.circle,
+          child: FadeTransition(
+
+            opacity: fadeAnimation,
+
+            child: Center(
+
+              child: SingleChildScrollView(
+
+                padding: const EdgeInsets.all(20),
+
+                child: ConstrainedBox(
+
+                  constraints: const BoxConstraints(
+                    maxWidth: 420,
+                  ),
+
+                  child: Container(
+
+                    padding: const EdgeInsets.all(26),
+
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+
+                      borderRadius:
+                      BorderRadius.circular(32),
+
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Colors.black26,
+                          blurRadius: 20,
                         ),
-                        child: const Icon(
-                          Icons.favorite,
-                          size: 50,
-                          color: Colors.red,
-                        ),
-                      ),
+                      ],
+                    ),
 
-                      const SizedBox(height: 12),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
 
-                      const Text(
-                        "Đăng ký",
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
+                      children: [
 
-                      const SizedBox(height: 20),
+                        /// ================= TOP ICON =================
+                        Container(
 
-                      /// EMAIL
-                      TextField(
-                        controller: email,
-                        decoration: InputDecoration(
-                          labelText: "Email",
-                          prefixIcon: const Icon(Icons.email),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
+                          padding: const EdgeInsets.all(22),
+
+                          decoration: BoxDecoration(
+                            color:
+                            Colors.green.withOpacity(0.12),
+
+                            shape: BoxShape.circle,
+                          ),
+
+                          child: const Icon(
+                            Icons.favorite,
+                            size: 60,
+                            color: Colors.red,
                           ),
                         ),
-                      ),
 
-                      const SizedBox(height: 12),
+                        const SizedBox(height: 20),
 
-                      /// PASSWORD
-                      TextField(
-                        controller: password,
-                        obscureText: obscure1,
-                        inputFormatters: [passwordFormatter], // 🔥 CHẶN
-                        decoration: InputDecoration(
-                          labelText: "Mật khẩu",
-                          prefixIcon: const Icon(Icons.lock),
-                          suffixIcon: IconButton(
-                            icon: Icon(
-                              obscure1
-                                  ? Icons.visibility
-                                  : Icons.visibility_off,
+                        /// ================= TITLE =================
+                        const Text(
+                          "Tạo tài khoản",
+
+                          style: TextStyle(
+                            fontSize: 30,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+
+                        const SizedBox(height: 8),
+
+                        const Text(
+                          "Đăng ký để bắt đầu theo dõi sức khỏe",
+
+                          textAlign: TextAlign.center,
+
+                          style: TextStyle(
+                            color: Colors.grey,
+                            height: 1.4,
+                          ),
+                        ),
+
+                        const SizedBox(height: 28),
+
+                        /// ================= EMAIL =================
+                        TextField(
+
+                          controller: email,
+
+                          keyboardType:
+                          TextInputType.emailAddress,
+
+                          decoration: InputDecoration(
+
+                            labelText: "Email",
+
+                            prefixIcon: const Icon(
+                              Icons.email_outlined,
                             ),
-                            onPressed: () {
-                              setState(() => obscure1 = !obscure1);
-                            },
-                          ),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                      ),
 
-                      const SizedBox(height: 12),
+                            filled: true,
 
-                      /// CONFIRM
-                      TextField(
-                        controller: confirm,
-                        obscureText: obscure2,
-                        inputFormatters: [passwordFormatter], // 🔥 CHẶN
-                        decoration: InputDecoration(
-                          labelText: "Xác nhận mật khẩu",
-                          prefixIcon: const Icon(Icons.lock_outline),
-                          suffixIcon: IconButton(
-                            icon: Icon(
-                              obscure2
-                                  ? Icons.visibility
-                                  : Icons.visibility_off,
-                            ),
-                            onPressed: () {
-                              setState(() => obscure2 = !obscure2);
-                            },
-                          ),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                      ),
+                            fillColor:
+                            const Color(0xFFF5F7FB),
 
-                      const SizedBox(height: 20),
+                            border: OutlineInputBorder(
+                              borderRadius:
+                              BorderRadius.circular(18),
 
-                      /// BUTTON
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: loading ? null : register,
-                          style: ElevatedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide.none,
                             ),
                           ),
-                          child: loading
-                              ? const CircularProgressIndicator(
-                            color: Colors.white,
-                          )
-                              : const Text("Đăng ký"),
                         ),
-                      ),
 
-                      const SizedBox(height: 10),
+                        const SizedBox(height: 18),
 
-                      /// BACK LOGIN
-                      TextButton(
-                        onPressed: () {
-                          Navigator.pop(context);
-                        },
-                        child: const Text("Đã có tài khoản? Đăng nhập"),
-                      ),
-                    ],
+                        /// ================= PASSWORD =================
+                        TextField(
+
+                          controller: password,
+
+                          obscureText: obscure1,
+
+                          inputFormatters: [
+                            passwordFormatter,
+                          ],
+
+                          onChanged: (_) {
+                            setState(() {});
+                          },
+
+                          decoration: InputDecoration(
+
+                            labelText: "Mật khẩu",
+
+                            prefixIcon: const Icon(
+                              Icons.lock_outline,
+                            ),
+
+                            suffixIcon: IconButton(
+
+                              icon: Icon(
+                                obscure1
+                                    ? Icons.visibility
+                                    : Icons.visibility_off,
+                              ),
+
+                              onPressed: () {
+
+                                setState(() {
+                                  obscure1 = !obscure1;
+                                });
+                              },
+                            ),
+
+                            filled: true,
+
+                            fillColor:
+                            const Color(0xFFF5F7FB),
+
+                            border: OutlineInputBorder(
+                              borderRadius:
+                              BorderRadius.circular(18),
+
+                              borderSide: BorderSide.none,
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 14),
+
+                        /// ================= PASSWORD RULE =================
+                        Container(
+
+                          width: double.infinity,
+
+                          padding: const EdgeInsets.all(14),
+
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade100,
+
+                            borderRadius:
+                            BorderRadius.circular(16),
+                          ),
+
+                          child: Column(
+                            crossAxisAlignment:
+                            CrossAxisAlignment.start,
+
+                            children: [
+
+                              const Text(
+                                "Yêu cầu mật khẩu",
+
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+
+                              const SizedBox(height: 10),
+
+                              passwordRule(
+                                "Ít nhất 6 ký tự",
+                                hasLength,
+                              ),
+
+                              const SizedBox(height: 6),
+
+                              passwordRule(
+                                "Có ít nhất 1 chữ HOA",
+                                hasUpper,
+                              ),
+
+                              const SizedBox(height: 6),
+
+                              passwordRule(
+                                "Có ít nhất 1 số",
+                                hasNumber,
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        const SizedBox(height: 18),
+
+                        /// ================= CONFIRM =================
+                        TextField(
+
+                          controller: confirm,
+
+                          obscureText: obscure2,
+
+                          inputFormatters: [
+                            passwordFormatter,
+                          ],
+
+                          onSubmitted: (_) {
+                            if (!loading) {
+                              register();
+                            }
+                          },
+
+                          decoration: InputDecoration(
+
+                            labelText:
+                            "Xác nhận mật khẩu",
+
+                            prefixIcon: const Icon(
+                              Icons.lock_reset,
+                            ),
+
+                            suffixIcon: IconButton(
+
+                              icon: Icon(
+                                obscure2
+                                    ? Icons.visibility
+                                    : Icons.visibility_off,
+                              ),
+
+                              onPressed: () {
+
+                                setState(() {
+                                  obscure2 = !obscure2;
+                                });
+                              },
+                            ),
+
+                            filled: true,
+
+                            fillColor:
+                            const Color(0xFFF5F7FB),
+
+                            border: OutlineInputBorder(
+                              borderRadius:
+                              BorderRadius.circular(18),
+
+                              borderSide: BorderSide.none,
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 30),
+
+                        /// ================= BUTTON =================
+                        SizedBox(
+
+                          width: double.infinity,
+
+                          child: ElevatedButton(
+
+                            onPressed:
+                            loading
+                                ? null
+                                : register,
+
+                            style: ElevatedButton.styleFrom(
+
+                              backgroundColor:
+                              Colors.green,
+
+                              foregroundColor:
+                              Colors.white,
+
+                              elevation: 0,
+
+                              padding:
+                              const EdgeInsets.symmetric(
+                                vertical: 17,
+                              ),
+
+                              shape: RoundedRectangleBorder(
+                                borderRadius:
+                                BorderRadius.circular(18),
+                              ),
+                            ),
+
+                            child:
+                            loading
+
+                                ? const SizedBox(
+                              width: 25,
+                              height: 25,
+
+                              child:
+                              CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2.5,
+                              ),
+                            )
+
+                                : const Text(
+                              "Đăng ký",
+
+                              style: TextStyle(
+                                fontSize: 17,
+                                fontWeight:
+                                FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 18),
+
+                        /// ================= LOGIN =================
+                        Row(
+                          mainAxisAlignment:
+                          MainAxisAlignment.center,
+
+                          children: [
+
+                            const Text(
+                              "Đã có tài khoản?",
+                            ),
+
+                            TextButton(
+
+                              onPressed: () {
+                                Navigator.pop(context);
+                              },
+
+                              child: const Text(
+                                "Đăng nhập",
+                                style: TextStyle(
+                                  fontWeight:
+                                  FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),

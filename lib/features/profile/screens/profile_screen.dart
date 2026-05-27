@@ -1,5 +1,9 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../auth/screens/login_screen.dart';
 
@@ -7,46 +11,71 @@ class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
 
   @override
-  State<ProfileScreen> createState() => _ProfileScreenState();
+  State<ProfileScreen> createState() =>
+      _ProfileScreenState();
 }
 
-class _ProfileScreenState extends State<ProfileScreen> {
+class _ProfileScreenState
+    extends State<ProfileScreen> {
 
-  final user = FirebaseAuth.instance.currentUser;
+  final user =
+      FirebaseAuth.instance.currentUser;
 
-  late TextEditingController nameController;
+  late TextEditingController
+  nameController;
 
-  late TextEditingController ageController;
+  late TextEditingController
+  ageController;
 
-  late TextEditingController heightController;
+  late TextEditingController
+  heightController;
 
-  late TextEditingController weightController;
+  late TextEditingController
+  weightController;
 
-  late TextEditingController goalController;
+  late TextEditingController
+  goalController;
+
+  bool darkMode = false;
+
+  bool notification = true;
+
+  File? imageFile;
+
+  String? imageUrl;
 
   @override
   void initState() {
     super.initState();
 
-    nameController = TextEditingController(
-      text: user?.displayName ?? "",
-    );
+    nameController =
+        TextEditingController(
+          text:
+          user?.displayName ?? "",
+        );
 
-    ageController = TextEditingController(
-      text: "20",
-    );
+    ageController =
+        TextEditingController(
+          text: "20",
+        );
 
-    heightController = TextEditingController(
-      text: "170",
-    );
+    heightController =
+        TextEditingController(
+          text: "170",
+        );
 
-    weightController = TextEditingController(
-      text: "65",
-    );
+    weightController =
+        TextEditingController(
+          text: "65",
+        );
 
-    goalController = TextEditingController(
-      text: "Duy trì sức khỏe",
-    );
+    goalController =
+        TextEditingController(
+          text:
+          "Duy trì sức khỏe",
+        );
+
+    imageUrl = user?.photoURL;
   }
 
   @override
@@ -65,34 +94,121 @@ class _ProfileScreenState extends State<ProfileScreen> {
     super.dispose();
   }
 
+  /// ================= PICK IMAGE =================
+  Future<void> pickImage() async {
+
+    final ImagePicker picker =
+    ImagePicker();
+
+    final XFile? pickedFile =
+    await picker.pickImage(
+      source:
+      ImageSource.gallery,
+    );
+
+    if (pickedFile == null) {
+      return;
+    }
+
+    setState(() {
+      imageFile =
+          File(pickedFile.path);
+    });
+
+    await uploadImage();
+  }
+
+  /// ================= UPLOAD IMAGE =================
+  Future<void> uploadImage() async {
+
+    if (imageFile == null ||
+        user == null) {
+      return;
+    }
+
+    try {
+
+      /// THỬ UPLOAD FIREBASE STORAGE
+      final ref =
+      FirebaseStorage.instance
+          .ref()
+          .child(
+        "profile_images/${user!.uid}.jpg",
+      );
+
+      await ref.putFile(
+        imageFile!,
+      );
+
+      final url =
+      await ref.getDownloadURL();
+
+      await user!
+          .updatePhotoURL(url);
+
+      setState(() {
+        imageUrl = url;
+      });
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(
+        const SnackBar(
+          content: Text(
+            "Cập nhật ảnh đại diện thành công",
+          ),
+        ),
+      );
+
+    } catch (e) {
+
+      /// FIREBASE STORAGE CHƯA BẬT
+      /// => DÙNG ẢNH LOCAL
+
+      setState(() {
+        imageUrl = null;
+      });
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(
+        const SnackBar(
+          content: Text(
+            "Firebase Storage chưa bật.\nĐang dùng ảnh local.",
+          ),
+        ),
+      );
+    }
+  }
+
   /// ================= BMI =================
   double get bmi {
 
-    final heightText =
-    heightController.text.isEmpty
-        ? "0"
-        : heightController.text;
-
-    final weightText =
-    weightController.text.isEmpty
-        ? "0"
-        : weightController.text;
-
     final h =
-        double.tryParse(heightText) ?? 0;
+        double.tryParse(
+          heightController.text,
+        ) ??
+            0;
 
     final w =
-        double.tryParse(weightText) ?? 0;
+        double.tryParse(
+          weightController.text,
+        ) ??
+            0;
 
     if (h <= 0) return 0;
 
-    return w / ((h / 100) * (h / 100));
+    return w /
+        ((h / 100) *
+            (h / 100));
   }
 
   /// ================= BMI TEXT =================
   String bmiText() {
 
-    if (bmi < 18.5) return "Thiếu cân";
+    if (bmi < 18.5) {
+      return "Thiếu cân";
+    }
 
     if (bmi < 25) {
       return "Bình thường";
@@ -108,7 +224,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   /// ================= BMI COLOR =================
   Color bmiColor() {
 
-    if (bmi < 18.5) return Colors.blue;
+    if (bmi < 18.5) {
+      return Colors.blue;
+    }
 
     if (bmi < 25) {
       return Colors.green;
@@ -128,28 +246,79 @@ class _ProfileScreenState extends State<ProfileScreen> {
       nameController.text,
     );
 
-    ScaffoldMessenger.of(context).showSnackBar(
+    setState(() {});
+
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(
       const SnackBar(
-        content: Text("Cập nhật thành công"),
+        content: Text(
+          "Cập nhật thành công",
+        ),
       ),
     );
-
-    setState(() {});
   }
 
   /// ================= LOGOUT =================
   Future<void> logout() async {
 
-    await FirebaseAuth.instance.signOut();
+    await FirebaseAuth.instance
+        .signOut();
 
     Navigator.pushAndRemoveUntil(
       context,
 
       MaterialPageRoute(
-        builder: (_) => const LoginScreen(),
+        builder:
+            (_) =>
+        const LoginScreen(),
       ),
 
           (route) => false,
+    );
+  }
+
+  /// ================= STAT ITEM =================
+  Widget statItem(
+      String value,
+      String label,
+      IconData icon,
+      ) {
+
+    return Column(
+      children: [
+
+        Icon(
+          icon,
+          color: Colors.white,
+        ),
+
+        const SizedBox(height: 6),
+
+        Text(
+          value,
+
+          style:
+          const TextStyle(
+            color: Colors.white,
+
+            fontSize: 20,
+
+            fontWeight:
+            FontWeight.bold,
+          ),
+        ),
+
+        Text(
+          label,
+
+          style:
+          const TextStyle(
+            color:
+            Colors.white70,
+          ),
+        ),
+      ],
     );
   }
 
@@ -162,19 +331,32 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ) {
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 14),
+      margin:
+      const EdgeInsets.only(
+        bottom: 14,
+      ),
 
-      padding: const EdgeInsets.all(18),
+      padding:
+      const EdgeInsets.all(18),
 
       decoration: BoxDecoration(
         color: Colors.white,
 
-        borderRadius: BorderRadius.circular(22),
+        borderRadius:
+        BorderRadius.circular(
+          28,
+        ),
 
         boxShadow: const [
+
           BoxShadow(
-            color: Colors.black12,
-            blurRadius: 6,
+            color:
+            Colors.black12,
+
+            blurRadius: 8,
+
+            offset:
+            Offset(0, 4),
           ),
         ],
       ),
@@ -182,10 +364,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
       child: Row(
         children: [
 
-          CircleAvatar(
-            radius: 24,
-            backgroundColor:
-            color.withOpacity(0.15),
+          Container(
+            padding:
+            const EdgeInsets.all(
+              14,
+            ),
+
+            decoration:
+            BoxDecoration(
+              color:
+              color.withOpacity(
+                0.15,
+              ),
+
+              shape:
+              BoxShape.circle,
+            ),
 
             child: Icon(
               icon,
@@ -198,27 +392,37 @@ class _ProfileScreenState extends State<ProfileScreen> {
           Expanded(
             child: Column(
               crossAxisAlignment:
-              CrossAxisAlignment.start,
+              CrossAxisAlignment
+                  .start,
 
               children: [
 
                 Text(
                   title,
 
-                  style: const TextStyle(
-                    color: Colors.grey,
+                  style:
+                  const TextStyle(
+                    color:
+                    Colors.grey,
+
                     fontSize: 13,
                   ),
                 ),
 
-                const SizedBox(height: 4),
+                const SizedBox(
+                  height: 5,
+                ),
 
                 Text(
                   value,
 
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
+                  style:
+                  const TextStyle(
+                    fontWeight:
+                    FontWeight
+                        .bold,
+
+                    fontSize: 17,
                   ),
                 ),
               ],
@@ -231,13 +435,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   /// ================= INPUT =================
   Widget customInput(
-      TextEditingController controller,
+      TextEditingController
+      controller,
       String label,
       IconData icon,
       ) {
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
+      padding:
+      const EdgeInsets.only(
+        bottom: 16,
+      ),
 
       child: TextField(
         controller: controller,
@@ -246,19 +454,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
           setState(() {});
         },
 
-        decoration: InputDecoration(
+        decoration:
+        InputDecoration(
           labelText: label,
 
-          prefixIcon: Icon(icon),
+          prefixIcon:
+          Icon(icon),
 
           filled: true,
-          fillColor: Colors.white,
 
-          border: OutlineInputBorder(
+          fillColor:
+          const Color(
+            0xFFF3F5F7,
+          ),
+
+          border:
+          OutlineInputBorder(
             borderRadius:
-            BorderRadius.circular(18),
+            BorderRadius.circular(
+              22,
+            ),
 
-            borderSide: BorderSide.none,
+            borderSide:
+            BorderSide.none,
           ),
         ),
       ),
@@ -266,15 +484,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(
+      BuildContext context,
+      ) {
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FB),
+      backgroundColor:
+      const Color(0xFFF5F7FB),
 
       appBar: AppBar(
         elevation: 0,
-        backgroundColor: Colors.transparent,
-        foregroundColor: Colors.black,
+
+        backgroundColor:
+        Colors.transparent,
+
+        foregroundColor:
+        Colors.black,
 
         title: const Text(
           "Hồ sơ cá nhân",
@@ -282,317 +507,262 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
 
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding:
+        const EdgeInsets.all(16),
 
         child: Column(
           children: [
 
-            /// ================= PROFILE HEADER =================
+            /// ================= HEADER =================
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(25),
 
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
+              padding:
+              const EdgeInsets.all(
+                25,
+              ),
+
+              decoration:
+              BoxDecoration(
+                gradient:
+                const LinearGradient(
                   colors: [
-                    Color(0xFF4facfe),
-                    Color(0xFF00f2fe),
+
+                    Color(
+                      0xFF6A11CB,
+                    ),
+
+                    Color(
+                      0xFF2575FC,
+                    ),
                   ],
+
+                  begin:
+                  Alignment.topLeft,
+
+                  end:
+                  Alignment
+                      .bottomRight,
                 ),
 
                 borderRadius:
-                BorderRadius.circular(30),
+                BorderRadius.circular(
+                  35,
+                ),
+
+                boxShadow: const [
+
+                  BoxShadow(
+                    color:
+                    Colors.black26,
+
+                    blurRadius: 12,
+
+                    offset:
+                    Offset(0, 5),
+                  ),
+                ],
               ),
 
               child: Column(
                 children: [
 
                   /// AVATAR
-                  CircleAvatar(
-                    radius: 45,
-                    backgroundColor: Colors.white,
+                  GestureDetector(
+                    onTap: pickImage,
 
-                    child: Text(
-                      (user?.displayName != null &&
-                          user!.displayName!.isNotEmpty)
-                          ? user!.displayName![0]
-                          : "U",
+                    child: Stack(
+                      children: [
 
-                      style: const TextStyle(
-                        fontSize: 35,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.blue,
-                      ),
+                        Container(
+                          decoration:
+                          BoxDecoration(
+                            shape:
+                            BoxShape.circle,
+
+                            boxShadow: [
+
+                              BoxShadow(
+                                color:
+                                Colors.white
+                                    .withOpacity(
+                                  0.5,
+                                ),
+
+                                blurRadius:
+                                20,
+                              ),
+                            ],
+                          ),
+
+                          child:
+                          CircleAvatar(
+                            radius: 55,
+
+                            backgroundColor:
+                            Colors.white,
+
+                            backgroundImage:
+                            imageFile != null
+                                ? FileImage(
+                              imageFile!,
+                            )
+                                : (imageUrl !=
+                                null
+                                ? NetworkImage(
+                              imageUrl!,
+                            )
+                                : null)
+                            as ImageProvider?,
+
+                            child:
+                            imageFile ==
+                                null &&
+                                imageUrl ==
+                                    null
+                                ? Text(
+                              (user?.displayName !=
+                                  null &&
+                                  user!
+                                      .displayName!
+                                      .isNotEmpty)
+                                  ? user!
+                                  .displayName![0]
+                                  : "U",
+
+                              style:
+                              const TextStyle(
+                                fontSize:
+                                40,
+
+                                fontWeight:
+                                FontWeight.bold,
+
+                                color:
+                                Colors.blue,
+                              ),
+                            )
+                                : null,
+                          ),
+                        ),
+
+                        Positioned(
+                          bottom: 0,
+                          right: 0,
+
+                          child:
+                          Container(
+                            padding:
+                            const EdgeInsets.all(
+                              8,
+                            ),
+
+                            decoration:
+                            BoxDecoration(
+                              color:
+                              Colors.white,
+
+                              borderRadius:
+                              BorderRadius.circular(
+                                50,
+                              ),
+                            ),
+
+                            child:
+                            const Icon(
+                              Icons
+                                  .camera_alt,
+
+                              color:
+                              Colors.blue,
+
+                              size: 20,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
 
-                  const SizedBox(height: 15),
+                  const SizedBox(
+                    height: 15,
+                  ),
 
                   /// NAME
                   Text(
-                    user?.displayName?.isNotEmpty == true
-                        ? user!.displayName!
+                    user?.displayName
+                        ?.isNotEmpty ==
+                        true
+                        ? user!
+                        .displayName!
                         : "Người dùng",
 
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
+                    style:
+                    const TextStyle(
+                      color:
+                      Colors.white,
+
+                      fontSize: 25,
+
+                      fontWeight:
+                      FontWeight.bold,
                     ),
                   ),
 
-                  const SizedBox(height: 5),
+                  const SizedBox(
+                    height: 5,
+                  ),
 
                   /// EMAIL
                   Text(
                     user?.email ?? "",
 
-                    style: const TextStyle(
-                      color: Colors.white70,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 25),
-
-            /// ================= BMI CARD =================
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(22),
-
-              decoration: BoxDecoration(
-                color: bmiColor(),
-
-                borderRadius:
-                BorderRadius.circular(25),
-              ),
-
-              child: Column(
-                children: [
-
-                  const Icon(
-                    Icons.favorite,
-                    color: Colors.white,
-                    size: 45,
-                  ),
-
-                  const SizedBox(height: 12),
-
-                  Text(
-                    bmi == 0
-                        ? "--"
-                        : bmi.toStringAsFixed(1),
-
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 45,
-                      fontWeight: FontWeight.bold,
+                    style:
+                    const TextStyle(
+                      color:
+                      Colors.white70,
                     ),
                   ),
 
-                  Text(
-                    bmi == 0
-                        ? "Chưa có dữ liệu"
-                        : bmiText(),
-
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                    ),
+                  const SizedBox(
+                    height: 25,
                   ),
-                ],
-              ),
-            ),
 
-            const SizedBox(height: 25),
+                  /// STATS
+                  Row(
+                    mainAxisAlignment:
+                    MainAxisAlignment
+                        .spaceEvenly,
 
-            /// ================= BODY INFO =================
-            infoCard(
-              Icons.cake,
-              "Tuổi",
-              "${ageController.text} tuổi",
-              Colors.orange,
-            ),
-
-            infoCard(
-              Icons.height,
-              "Chiều cao",
-              "${heightController.text} cm",
-              Colors.blue,
-            ),
-
-            infoCard(
-              Icons.monitor_weight,
-              "Cân nặng",
-              "${weightController.text} kg",
-              Colors.green,
-            ),
-
-            infoCard(
-              Icons.flag,
-              "Mục tiêu",
-              goalController.text,
-              Colors.purple,
-            ),
-
-            const SizedBox(height: 10),
-
-            /// ================= EDIT SECTION =================
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(20),
-
-              decoration: BoxDecoration(
-                color: Colors.white,
-
-                borderRadius:
-                BorderRadius.circular(25),
-
-                boxShadow: const [
-                  BoxShadow(
-                    color: Colors.black12,
-                    blurRadius: 8,
-                  ),
-                ],
-              ),
-
-              child: Column(
-                children: [
-
-                  const Row(
                     children: [
 
-                      Icon(
-                        Icons.edit,
-                        color: Colors.blue,
+                      statItem(
+                        "7200",
+                        "Steps",
+                        Icons
+                            .directions_walk,
                       ),
 
-                      SizedBox(width: 10),
+                      statItem(
+                        "1800",
+                        "Calories",
+                        Icons
+                            .local_fire_department,
+                      ),
 
-                      Text(
-                        "Chỉnh sửa thông tin",
-
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight:
-                          FontWeight.bold,
-                        ),
+                      statItem(
+                        "2.1L",
+                        "Water",
+                        Icons
+                            .water_drop,
                       ),
                     ],
                   ),
-
-                  const SizedBox(height: 20),
-
-                  customInput(
-                    nameController,
-                    "Tên hiển thị",
-                    Icons.person,
-                  ),
-
-                  customInput(
-                    ageController,
-                    "Tuổi",
-                    Icons.cake,
-                  ),
-
-                  customInput(
-                    heightController,
-                    "Chiều cao",
-                    Icons.height,
-                  ),
-
-                  customInput(
-                    weightController,
-                    "Cân nặng",
-                    Icons.monitor_weight,
-                  ),
-
-                  customInput(
-                    goalController,
-                    "Mục tiêu sức khỏe",
-                    Icons.flag,
-                  ),
-
-                  const SizedBox(height: 10),
-
-                  /// UPDATE BUTTON
-                  SizedBox(
-                    width: double.infinity,
-
-                    child: ElevatedButton(
-                      onPressed: updateProfile,
-
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor:
-                        Colors.blue,
-
-                        padding:
-                        const EdgeInsets.symmetric(
-                          vertical: 16,
-                        ),
-
-                        shape: RoundedRectangleBorder(
-                          borderRadius:
-                          BorderRadius.circular(18),
-                        ),
-                      ),
-
-                      child: const Text(
-                        "Cập nhật",
-
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                  ),
                 ],
               ),
             ),
 
-            const SizedBox(height: 20),
-
-            /// ================= LOGOUT =================
-            SizedBox(
-              width: double.infinity,
-
-              child: ElevatedButton.icon(
-                onPressed: logout,
-
-                icon: const Icon(
-                  Icons.logout,
-                  color: Colors.white,
-                ),
-
-                label: const Text(
-                  "Đăng xuất",
-
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                  ),
-                ),
-
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red,
-
-                  padding:
-                  const EdgeInsets.symmetric(
-                    vertical: 16,
-                  ),
-
-                  shape: RoundedRectangleBorder(
-                    borderRadius:
-                    BorderRadius.circular(18),
-                  ),
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 30),
+            const SizedBox(height: 40),
           ],
         ),
       ),

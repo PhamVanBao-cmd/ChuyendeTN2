@@ -4,132 +4,400 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 import '../../dashboard/screens/dashboard_screen.dart';
 
-class HistoryScreen extends StatelessWidget {
+class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
 
   @override
+  State<HistoryScreen> createState() =>
+      _HistoryScreenState();
+}
+
+class _HistoryScreenState
+    extends State<HistoryScreen> {
+
+  /// ================= SELECTED =================
+  final List<String> selectedDocs = [];
+
+  /// ================= DELETE =================
+  Future<void> deleteSelected() async {
+
+    final user =
+        FirebaseAuth.instance.currentUser;
+
+    if (user == null) return;
+
+    for (String id in selectedDocs) {
+
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .collection('health')
+          .doc(id)
+          .delete();
+    }
+
+    setState(() {
+      selectedDocs.clear();
+    });
+
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(
+          "Đã xóa dữ liệu đã chọn",
+        ),
+      ),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser;
+
+    final user =
+        FirebaseAuth.instance.currentUser;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FB),
+
+      backgroundColor:
+      const Color(0xFFF5F7FB),
 
       /// ================= APPBAR =================
       appBar: AppBar(
         elevation: 0,
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
-        title: const Text(
-          "Lịch sử sức khỏe",
-          style: TextStyle(fontWeight: FontWeight.bold),
+
+        title: Text(
+
+          selectedDocs.isEmpty
+              ? "Lịch sử sức khỏe"
+              : "${selectedDocs.length} đã chọn",
+
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+          ),
         ),
 
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+
+          icon: Icon(
+            selectedDocs.isEmpty
+                ? Icons.arrow_back
+                : Icons.close,
+          ),
+
           onPressed: () {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                builder: (_) => const DashboardScreen(),
-              ),
-            );
+
+            if (selectedDocs.isNotEmpty) {
+
+              setState(() {
+                selectedDocs.clear();
+              });
+
+            } else {
+
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (_) =>
+                  const DashboardScreen(),
+                ),
+              );
+            }
           },
         ),
+
+        actions: [
+
+          if (selectedDocs.isNotEmpty)
+
+            IconButton(
+
+              icon: const Icon(
+                Icons.delete,
+                color: Colors.red,
+              ),
+
+              onPressed: () async {
+
+                final confirm =
+                await showDialog<bool>(
+
+                  context: context,
+
+                  builder: (_) {
+
+                    return AlertDialog(
+
+                      title: const Text(
+                        "Xóa dữ liệu?",
+                      ),
+
+                      content: Text(
+                        "Bạn muốn xóa ${selectedDocs.length} lần đo?",
+                      ),
+
+                      actions: [
+
+                        TextButton(
+                          onPressed: () {
+                            Navigator.pop(
+                              context,
+                              false,
+                            );
+                          },
+
+                          child: const Text(
+                            "Hủy",
+                          ),
+                        ),
+
+                        ElevatedButton(
+                          onPressed: () {
+                            Navigator.pop(
+                              context,
+                              true,
+                            );
+                          },
+
+                          child: const Text(
+                            "Xóa",
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                );
+
+                if (confirm == true) {
+                  deleteSelected();
+                }
+              },
+            ),
+        ],
       ),
 
       /// ================= BODY =================
       body: user == null
+
           ? const Center(
-        child: Text("❌ Chưa đăng nhập"),
+        child: Text(
+          "❌ Chưa đăng nhập",
+        ),
       )
+
           : Center(
+
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 500),
+
+          constraints:
+          const BoxConstraints(
+            maxWidth: 500,
+          ),
 
           child: StreamBuilder<QuerySnapshot>(
+
             stream: FirebaseFirestore.instance
                 .collection('users')
                 .doc(user.uid)
                 .collection('health')
-                .orderBy('createdAt', descending: true)
+                .orderBy(
+              'createdAt',
+              descending: true,
+            )
                 .snapshots(),
 
             builder: (context, snapshot) {
 
               if (!snapshot.hasData) {
+
                 return const Center(
-                  child: CircularProgressIndicator(),
+                  child:
+                  CircularProgressIndicator(),
                 );
               }
 
-              final docs = snapshot.data!.docs;
+              final docs =
+                  snapshot.data!.docs;
 
               if (docs.isEmpty) {
+
                 return const Center(
                   child: Text(
                     "Chưa có dữ liệu 😢",
-                    style: TextStyle(fontSize: 18),
+                    style: TextStyle(
+                      fontSize: 18,
+                    ),
                   ),
                 );
               }
 
               return ListView.builder(
-                padding: const EdgeInsets.all(16),
+
+                padding:
+                const EdgeInsets.all(16),
+
                 itemCount: docs.length,
 
                 itemBuilder: (_, i) {
 
                   final d = docs[i];
 
+                  final isSelected =
+                  selectedDocs.contains(
+                    d.id,
+                  );
+
                   final bmi =
-                  (d['bmi'] ?? 0).toDouble();
+                  (d['bmi'] ?? 0)
+                      .toDouble();
 
                   final sys =
-                      int.tryParse(d['systolic'].toString()) ?? 0;
+                      int.tryParse(
+                        d['systolic']
+                            .toString(),
+                      ) ??
+                          0;
 
                   final dia =
-                      int.tryParse(d['diastolic'].toString()) ?? 0;
+                      int.tryParse(
+                        d['diastolic']
+                            .toString(),
+                      ) ??
+                          0;
 
                   final hr =
-                      int.tryParse(d['heartRate'].toString()) ?? 0;
+                      int.tryParse(
+                        d['heartRate']
+                            .toString(),
+                      ) ??
+                          0;
 
                   final sugar =
-                      double.tryParse(d['bloodSugar'].toString()) ?? 0;
+                      double.tryParse(
+                        d['bloodSugar']
+                            .toString(),
+                      ) ??
+                          0;
 
                   final chol =
-                      double.tryParse(d['cholesterol'].toString()) ?? 0;
+                      double.tryParse(
+                        d['cholesterol']
+                            .toString(),
+                      ) ??
+                          0;
 
                   final weight =
-                      double.tryParse(d['weight'].toString()) ?? 0;
+                      double.tryParse(
+                        d['weight']
+                            .toString(),
+                      ) ??
+                          0;
 
                   final height =
-                      double.tryParse(d['height'].toString()) ?? 0;
+                      double.tryParse(
+                        d['height']
+                            .toString(),
+                      ) ??
+                          0;
 
-                  return GestureDetector(
+                  return InkWell(
 
-                    /// ================= DETAIL =================
+                    borderRadius:
+                    BorderRadius.circular(
+                      25,
+                    ),
+
+                    /// ================= LONG PRESS =================
+                    onLongPress: () {
+
+                      setState(() {
+
+                        if (isSelected) {
+
+                          selectedDocs.remove(
+                            d.id,
+                          );
+
+                        } else {
+
+                          selectedDocs.add(
+                            d.id,
+                          );
+                        }
+                      });
+                    },
+
+                    /// ================= TAP =================
                     onTap: () {
+
+                      /// NẾU ĐANG CHỌN
+                      if (selectedDocs
+                          .isNotEmpty) {
+
+                        setState(() {
+
+                          if (isSelected) {
+
+                            selectedDocs
+                                .remove(
+                              d.id,
+                            );
+
+                          } else {
+
+                            selectedDocs
+                                .add(
+                              d.id,
+                            );
+                          }
+                        });
+
+                        return;
+                      }
+
+                      /// ================= DETAIL =================
                       showModalBottomSheet(
+
                         context: context,
-                        isScrollControlled: true,
-                        backgroundColor: Colors.transparent,
+
+                        isScrollControlled:
+                        true,
+
+                        backgroundColor:
+                        Colors.transparent,
 
                         builder: (_) {
-                          return Container(
-                            padding: const EdgeInsets.all(20),
 
-                            decoration: const BoxDecoration(
+                          return Container(
+
+                            padding:
+                            const EdgeInsets
+                                .all(20),
+
+                            decoration:
+                            const BoxDecoration(
                               color: Colors.white,
 
-                              borderRadius: BorderRadius.vertical(
-                                top: Radius.circular(30),
+                              borderRadius:
+                              BorderRadius
+                                  .vertical(
+                                top:
+                                Radius.circular(
+                                  30,
+                                ),
                               ),
                             ),
 
-                            child: SingleChildScrollView(
+                            child:
+                            SingleChildScrollView(
+
                               child: Column(
+
                                 crossAxisAlignment:
-                                CrossAxisAlignment.start,
+                                CrossAxisAlignment
+                                    .start,
 
                                 children: [
 
@@ -139,44 +407,74 @@ class HistoryScreen extends StatelessWidget {
                                       width: 60,
                                       height: 6,
 
-                                      decoration: BoxDecoration(
-                                        color: Colors.grey.shade300,
+                                      decoration:
+                                      BoxDecoration(
+                                        color: Colors
+                                            .grey
+                                            .shade300,
+
                                         borderRadius:
-                                        BorderRadius.circular(10),
+                                        BorderRadius
+                                            .circular(
+                                          10,
+                                        ),
                                       ),
                                     ),
                                   ),
 
-                                  const SizedBox(height: 20),
+                                  const SizedBox(
+                                    height: 20,
+                                  ),
 
-                                  /// TITLE
                                   const Text(
                                     "Chi tiết lần đo",
 
                                     style: TextStyle(
                                       fontSize: 24,
-                                      fontWeight: FontWeight.bold,
+                                      fontWeight:
+                                      FontWeight
+                                          .bold,
                                     ),
                                   ),
 
-                                  const SizedBox(height: 20),
+                                  const SizedBox(
+                                    height: 20,
+                                  ),
 
                                   /// BMI CARD
                                   Container(
-                                    width: double.infinity,
-                                    padding: const EdgeInsets.all(20),
 
-                                    decoration: BoxDecoration(
-                                      gradient: LinearGradient(
+                                    width:
+                                    double.infinity,
+
+                                    padding:
+                                    const EdgeInsets
+                                        .all(20),
+
+                                    decoration:
+                                    BoxDecoration(
+
+                                      gradient:
+                                      LinearGradient(
                                         colors: [
-                                          getBMIColor(bmi)
-                                              .withOpacity(0.7),
-                                          getBMIColor(bmi),
+
+                                          getBMIColor(
+                                            bmi,
+                                          ).withOpacity(
+                                            0.7,
+                                          ),
+
+                                          getBMIColor(
+                                            bmi,
+                                          ),
                                         ],
                                       ),
 
                                       borderRadius:
-                                      BorderRadius.circular(25),
+                                      BorderRadius
+                                          .circular(
+                                        25,
+                                      ),
                                     ),
 
                                     child: Column(
@@ -184,110 +482,56 @@ class HistoryScreen extends StatelessWidget {
 
                                         const Icon(
                                           Icons.favorite,
-                                          color: Colors.white,
+                                          color:
+                                          Colors
+                                              .white,
                                           size: 50,
                                         ),
 
-                                        const SizedBox(height: 10),
+                                        const SizedBox(
+                                          height: 10,
+                                        ),
 
                                         Text(
-                                          bmi.toStringAsFixed(1),
+                                          bmi
+                                              .toStringAsFixed(
+                                            1,
+                                          ),
 
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 40,
+                                          style:
+                                          const TextStyle(
+                                            color:
+                                            Colors
+                                                .white,
+                                            fontSize:
+                                            40,
                                             fontWeight:
                                             FontWeight.bold,
                                           ),
                                         ),
 
                                         Text(
-                                          getBMIText(bmi),
+                                          getBMIText(
+                                            bmi,
+                                          ),
 
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 18,
+                                          style:
+                                          const TextStyle(
+                                            color:
+                                            Colors
+                                                .white,
+                                            fontSize:
+                                            18,
                                           ),
                                         ),
                                       ],
                                     ),
                                   ),
 
-                                  const SizedBox(height: 25),
-
-                                  /// ================= HEALTH SCORE =================
-                                  Container(
-                                    width: double.infinity,
-                                    padding: const EdgeInsets.all(20),
-
-                                    decoration: BoxDecoration(
-                                      color: Colors.grey.shade100,
-                                      borderRadius:
-                                      BorderRadius.circular(25),
-                                    ),
-
-                                    child: Column(
-                                      crossAxisAlignment:
-                                      CrossAxisAlignment.start,
-
-                                      children: [
-
-                                        const Text(
-                                          "Đánh giá sức khỏe",
-
-                                          style: TextStyle(
-                                            fontSize: 18,
-                                            fontWeight:
-                                            FontWeight.bold,
-                                          ),
-                                        ),
-
-                                        const SizedBox(height: 20),
-
-                                        healthScoreItem(
-                                          "BMI",
-                                          bmi < 25 ? 90 : 65,
-                                          getBMIColor(bmi),
-                                        ),
-
-                                        const SizedBox(height: 15),
-
-                                        healthScoreItem(
-                                          "Huyết áp",
-                                          sys < 120 ? 95 : 70,
-                                          Colors.red,
-                                        ),
-
-                                        const SizedBox(height: 15),
-
-                                        healthScoreItem(
-                                          "Nhịp tim",
-                                          hr <= 100 ? 92 : 60,
-                                          Colors.pink,
-                                        ),
-
-                                        const SizedBox(height: 15),
-
-                                        healthScoreItem(
-                                          "Đường huyết",
-                                          sugar < 140 ? 90 : 55,
-                                          Colors.deepPurple,
-                                        ),
-
-                                        const SizedBox(height: 15),
-
-                                        healthScoreItem(
-                                          "Cholesterol",
-                                          chol < 200 ? 88 : 60,
-                                          Colors.cyan,
-                                        ),
-                                      ],
-                                    ),
+                                  const SizedBox(
+                                    height: 25,
                                   ),
 
-                                  const SizedBox(height: 20),
-
-                                  /// ================= DETAIL INFO =================
                                   detailTile(
                                     Icons.monitor_weight,
                                     "Cân nặng",
@@ -330,37 +574,56 @@ class HistoryScreen extends StatelessWidget {
                                     Colors.cyan,
                                   ),
 
-                                  const SizedBox(height: 20),
+                                  const SizedBox(
+                                    height: 20,
+                                  ),
 
-                                  /// ================= DATE =================
+                                  /// DATE
                                   Container(
-                                    width: double.infinity,
-                                    padding:
-                                    const EdgeInsets.all(16),
 
-                                    decoration: BoxDecoration(
-                                      color: Colors.grey.shade100,
+                                    width:
+                                    double.infinity,
+
+                                    padding:
+                                    const EdgeInsets
+                                        .all(16),
+
+                                    decoration:
+                                    BoxDecoration(
+                                      color: Colors
+                                          .grey
+                                          .shade100,
 
                                       borderRadius:
-                                      BorderRadius.circular(18),
+                                      BorderRadius
+                                          .circular(
+                                        18,
+                                      ),
                                     ),
 
                                     child: Row(
                                       children: [
 
                                         const Icon(
-                                          Icons.access_time,
+                                          Icons
+                                              .access_time,
                                         ),
 
-                                        const SizedBox(width: 10),
+                                        const SizedBox(
+                                          width: 10,
+                                        ),
 
                                         Expanded(
                                           child: Text(
-                                            d['createdAt'] != null
+
+                                            d['createdAt'] !=
+                                                null
+
                                                 ? (d['createdAt']
                                             as Timestamp)
                                                 .toDate()
                                                 .toString()
+
                                                 : "",
                                           ),
                                         ),
@@ -368,7 +631,9 @@ class HistoryScreen extends StatelessWidget {
                                     ),
                                   ),
 
-                                  const SizedBox(height: 20),
+                                  const SizedBox(
+                                    height: 20,
+                                  ),
                                 ],
                               ),
                             ),
@@ -379,20 +644,40 @@ class HistoryScreen extends StatelessWidget {
 
                     /// ================= CARD =================
                     child: Container(
-                      margin: const EdgeInsets.only(bottom: 16),
 
-                      padding: const EdgeInsets.all(18),
+                      margin:
+                      const EdgeInsets.only(
+                        bottom: 16,
+                      ),
+
+                      padding:
+                      const EdgeInsets.all(
+                        18,
+                      ),
 
                       decoration: BoxDecoration(
 
-                        gradient: const LinearGradient(
+                        border: isSelected
+
+                            ? Border.all(
+                          color: Colors.red,
+                          width: 3,
+                        )
+
+                            : null,
+
+                        gradient:
+                        const LinearGradient(
                           colors: [
                             Color(0xFF4facfe),
                             Color(0xFF00f2fe),
                           ],
                         ),
 
-                        borderRadius: BorderRadius.circular(25),
+                        borderRadius:
+                        BorderRadius.circular(
+                          25,
+                        ),
 
                         boxShadow: const [
                           BoxShadow(
@@ -407,13 +692,20 @@ class HistoryScreen extends StatelessWidget {
 
                           /// ICON
                           Container(
-                            padding: const EdgeInsets.all(14),
+                            padding:
+                            const EdgeInsets
+                                .all(14),
 
-                            decoration: BoxDecoration(
-                              color: Colors.white,
+                            decoration:
+                            BoxDecoration(
+                              color:
+                              Colors.white,
 
                               borderRadius:
-                              BorderRadius.circular(18),
+                              BorderRadius
+                                  .circular(
+                                18,
+                              ),
                             ),
 
                             child: const Icon(
@@ -423,53 +715,83 @@ class HistoryScreen extends StatelessWidget {
                             ),
                           ),
 
-                          const SizedBox(width: 15),
+                          const SizedBox(
+                            width: 15,
+                          ),
 
                           /// INFO
                           Expanded(
                             child: Column(
+
                               crossAxisAlignment:
-                              CrossAxisAlignment.start,
+                              CrossAxisAlignment
+                                  .start,
 
                               children: [
 
                                 Text(
                                   "BMI: ${bmi.toStringAsFixed(1)}",
 
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.bold,
+                                  style:
+                                  const TextStyle(
+                                    color:
+                                    Colors.white,
+                                    fontSize:
+                                    20,
+                                    fontWeight:
+                                    FontWeight
+                                        .bold,
                                   ),
                                 ),
 
-                                const SizedBox(height: 6),
+                                const SizedBox(
+                                  height: 6,
+                                ),
 
                                 Text(
-                                  getBMIText(bmi),
+                                  getBMIText(
+                                    bmi,
+                                  ),
 
-                                  style: const TextStyle(
-                                    color: Colors.white70,
+                                  style:
+                                  const TextStyle(
+                                    color: Colors
+                                        .white70,
                                   ),
                                 ),
 
-                                const SizedBox(height: 8),
+                                const SizedBox(
+                                  height: 8,
+                                ),
 
                                 Text(
                                   "Huyết áp: $sys/$dia",
 
-                                  style: const TextStyle(
-                                    color: Colors.white,
+                                  style:
+                                  const TextStyle(
+                                    color:
+                                    Colors.white,
                                   ),
                                 ),
                               ],
                             ),
                           ),
 
-                          /// ARROW
-                          const Icon(
-                            Icons.arrow_forward_ios,
-                            color: Colors.white,
+                          /// CHECK
+                          isSelected
+
+                              ? const Icon(
+                            Icons.check_circle,
+                            color:
+                            Colors.white,
+                            size: 30,
+                          )
+
+                              : const Icon(
+                            Icons
+                                .arrow_forward_ios,
+                            color:
+                            Colors.white,
                           ),
                         ],
                       ),
@@ -484,60 +806,6 @@ class HistoryScreen extends StatelessWidget {
     );
   }
 
-  /// ================= SCORE ITEM =================
-  Widget healthScoreItem(
-      String title,
-      int score,
-      Color color,
-      ) {
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-
-      children: [
-
-        Row(
-          mainAxisAlignment:
-          MainAxisAlignment.spaceBetween,
-
-          children: [
-
-            Text(
-              title,
-
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-
-            Text(
-              "$score/100",
-
-              style: TextStyle(
-                color: color,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ),
-
-        const SizedBox(height: 8),
-
-        ClipRRect(
-          borderRadius: BorderRadius.circular(20),
-
-          child: LinearProgressIndicator(
-            value: score / 100,
-            minHeight: 10,
-            backgroundColor: Colors.grey.shade300,
-            valueColor:
-            AlwaysStoppedAnimation(color),
-          ),
-        ),
-      ],
-    );
-  }
-
   /// ================= DETAIL TILE =================
   Widget detailTile(
       IconData icon,
@@ -547,13 +815,20 @@ class HistoryScreen extends StatelessWidget {
       ) {
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 14),
 
-      padding: const EdgeInsets.all(16),
+      margin:
+      const EdgeInsets.only(
+        bottom: 14,
+      ),
+
+      padding:
+      const EdgeInsets.all(16),
 
       decoration: BoxDecoration(
         color: Colors.grey.shade100,
-        borderRadius: BorderRadius.circular(20),
+
+        borderRadius:
+        BorderRadius.circular(20),
       ),
 
       child: Row(
@@ -576,7 +851,8 @@ class HistoryScreen extends StatelessWidget {
               title,
 
               style: const TextStyle(
-                fontWeight: FontWeight.w600,
+                fontWeight:
+                FontWeight.w600,
               ),
             ),
           ),
@@ -585,7 +861,8 @@ class HistoryScreen extends StatelessWidget {
             value,
 
             style: const TextStyle(
-              fontWeight: FontWeight.bold,
+              fontWeight:
+              FontWeight.bold,
             ),
           ),
         ],
@@ -595,17 +872,37 @@ class HistoryScreen extends StatelessWidget {
 
   /// ================= BMI TEXT =================
   String getBMIText(double bmi) {
-    if (bmi < 18.5) return "Thiếu cân";
-    if (bmi < 25) return "Bình thường";
-    if (bmi < 30) return "Thừa cân";
+
+    if (bmi < 18.5) {
+      return "Thiếu cân";
+    }
+
+    if (bmi < 25) {
+      return "Bình thường";
+    }
+
+    if (bmi < 30) {
+      return "Thừa cân";
+    }
+
     return "Béo phì";
   }
 
   /// ================= BMI COLOR =================
   Color getBMIColor(double bmi) {
-    if (bmi < 18.5) return Colors.blue;
-    if (bmi < 25) return Colors.green;
-    if (bmi < 30) return Colors.orange;
+
+    if (bmi < 18.5) {
+      return Colors.blue;
+    }
+
+    if (bmi < 25) {
+      return Colors.green;
+    }
+
+    if (bmi < 30) {
+      return Colors.orange;
+    }
+
     return Colors.red;
   }
 }

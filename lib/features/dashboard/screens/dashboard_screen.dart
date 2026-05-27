@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../auth/screens/login_screen.dart';
 import '../../calorie/screens/calorie_screen.dart';
@@ -7,14 +8,60 @@ import '../../health/screens/health_input_screen.dart';
 import '../../health/screens/history_screen.dart';
 import '../../profile/screens/profile_screen.dart';
 
-/// ===== IMPORT STEP + SLEEP =====
+/// STEP + SLEEP
 import '../../steps/screens/step_screen.dart';
 import '../../sleep/screens/sleep_screen.dart';
 
-class DashboardScreen extends StatelessWidget {
+/// WATER
+import '../../water/screens/water_screen.dart';
+
+class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
 
-  /// ================= BUTTON =================
+  @override
+  State<DashboardScreen> createState() =>
+      _DashboardScreenState();
+}
+
+class _DashboardScreenState
+    extends State<DashboardScreen> {
+
+  /// ================= WATER =================
+  int currentWater = 0;
+
+  final int waterGoal = 2500;
+
+  /// ================= LOAD WATER =================
+  Future<void> loadWater() async {
+
+    final prefs =
+    await SharedPreferences.getInstance();
+
+    setState(() {
+
+      currentWater =
+          prefs.getInt("current_water") ?? 0;
+    });
+  }
+
+  /// ================= WATER PROGRESS =================
+  double get waterProgress {
+
+    if (currentWater >= waterGoal) {
+      return 1;
+    }
+
+    return currentWater / waterGoal;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+
+    loadWater();
+  }
+
+  /// ================= QUICK BUTTON =================
   Widget quickButton(
       BuildContext context,
       String title,
@@ -23,45 +70,76 @@ class DashboardScreen extends StatelessWidget {
       Color color,
       Widget screen,
       ) {
+
     return GestureDetector(
-      onTap: () {
-        Navigator.push(
+
+      onTap: () async {
+
+        await Navigator.push(
           context,
+
           MaterialPageRoute(
             builder: (_) => screen,
           ),
         );
+
+        /// reload water khi quay lại
+        loadWater();
       },
+
       child: Container(
+
         padding: const EdgeInsets.all(18),
+
         decoration: BoxDecoration(
+
           gradient: LinearGradient(
             colors: [
               color.withOpacity(0.75),
               color,
             ],
+
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
-          borderRadius: BorderRadius.circular(28),
+
+          borderRadius:
+          BorderRadius.circular(28),
+
           boxShadow: [
+
             BoxShadow(
-              color: color.withOpacity(0.25),
+              color:
+              color.withOpacity(0.25),
+
               blurRadius: 15,
+
               offset: const Offset(0, 6),
             ),
           ],
         ),
+
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+
+          crossAxisAlignment:
+          CrossAxisAlignment.start,
+
           children: [
+
             /// ICON
             Container(
-              padding: const EdgeInsets.all(14),
+
+              padding:
+              const EdgeInsets.all(14),
+
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.25),
-                borderRadius: BorderRadius.circular(18),
+                color:
+                Colors.white.withOpacity(0.25),
+
+                borderRadius:
+                BorderRadius.circular(18),
               ),
+
               child: Icon(
                 icon,
                 color: Colors.white,
@@ -73,6 +151,7 @@ class DashboardScreen extends StatelessWidget {
 
             Text(
               title,
+
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 17,
@@ -84,6 +163,7 @@ class DashboardScreen extends StatelessWidget {
 
             Text(
               subtitle,
+
               style: const TextStyle(
                 color: Colors.white70,
                 fontSize: 12,
@@ -97,31 +177,44 @@ class DashboardScreen extends StatelessWidget {
 
   /// ================= LOGOUT =================
   void logout(BuildContext context) async {
+
     await FirebaseAuth.instance.signOut();
 
     Navigator.pushAndRemoveUntil(
+
       context,
+
       MaterialPageRoute(
-        builder: (_) => const LoginScreen(),
+        builder: (_) =>
+        const LoginScreen(),
       ),
+
           (route) => false,
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser;
+
+    final user =
+        FirebaseAuth.instance.currentUser;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F7FC),
+
+      backgroundColor:
+      const Color(0xFFF4F7FC),
 
       /// ================= APPBAR =================
       appBar: AppBar(
+
         elevation: 0,
-        backgroundColor: Colors.transparent,
+
+        backgroundColor:
+        Colors.transparent,
 
         title: const Row(
           children: [
+
             Icon(
               Icons.favorite,
               color: Colors.red,
@@ -131,6 +224,7 @@ class DashboardScreen extends StatelessWidget {
 
             Text(
               "Health Dashboard",
+
               style: TextStyle(
                 color: Colors.black,
                 fontWeight: FontWeight.bold,
@@ -140,387 +234,535 @@ class DashboardScreen extends StatelessWidget {
         ),
 
         actions: [
+
           IconButton(
             icon: const Icon(
               Icons.logout_rounded,
               color: Colors.black,
             ),
-            onPressed: () => logout(context),
+
+            onPressed: () =>
+                logout(context),
           ),
         ],
       ),
 
       /// ================= BODY =================
-      body: Center(
+      body: RefreshIndicator(
+
+        onRefresh: loadWater,
+
         child: SingleChildScrollView(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(
-              maxWidth: 460,
-            ),
 
-            child: Padding(
-              padding: const EdgeInsets.all(16),
+          physics:
+          const AlwaysScrollableScrollPhysics(),
 
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+          child: Center(
 
-                children: [
-                  /// ================= USER CARD =================
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(22),
+            child: ConstrainedBox(
 
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [
-                          Color(0xFF6A11CB),
-                          Color(0xFF2575FC),
+              constraints:
+              const BoxConstraints(
+                maxWidth: 460,
+              ),
+
+              child: Padding(
+
+                padding:
+                const EdgeInsets.all(16),
+
+                child: Column(
+
+                  crossAxisAlignment:
+                  CrossAxisAlignment.start,
+
+                  children: [
+
+                    /// ================= USER CARD =================
+                    Container(
+
+                      width: double.infinity,
+
+                      padding:
+                      const EdgeInsets.all(22),
+
+                      decoration: BoxDecoration(
+
+                        gradient:
+                        const LinearGradient(
+                          colors: [
+                            Color(0xFF6A11CB),
+                            Color(0xFF2575FC),
+                          ],
+                        ),
+
+                        borderRadius:
+                        BorderRadius.circular(30),
+
+                        boxShadow: [
+
+                          BoxShadow(
+                            color:
+                            Colors.blue.withOpacity(
+                              0.25,
+                            ),
+
+                            blurRadius: 18,
+
+                            offset:
+                            const Offset(0, 8),
+                          ),
                         ],
                       ),
 
-                      borderRadius: BorderRadius.circular(30),
+                      child: Row(
+                        children: [
 
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.blue.withOpacity(0.25),
-                          blurRadius: 18,
-                          offset: const Offset(0, 8),
-                        ),
-                      ],
-                    ),
+                          CircleAvatar(
+                            radius: 34,
 
-                    child: Row(
-                      children: [
-                        CircleAvatar(
-                          radius: 34,
-                          backgroundColor: Colors.white,
+                            backgroundColor:
+                            Colors.white,
 
-                          child: Text(
-                            (user?.email ?? "U")[0].toUpperCase(),
+                            child: Text(
+                              (user?.email ?? "U")[0]
+                                  .toUpperCase(),
 
-                            style: const TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.blue,
+                              style: const TextStyle(
+                                fontSize: 24,
+                                fontWeight:
+                                FontWeight.bold,
+                                color: Colors.blue,
+                              ),
                             ),
                           ),
-                        ),
 
-                        const SizedBox(width: 16),
+                          const SizedBox(width: 16),
 
-                        Expanded(
-                          child: Column(
+                          Expanded(
+                            child: Column(
+
+                              crossAxisAlignment:
+                              CrossAxisAlignment.start,
+
+                              children: [
+
+                                const Text(
+                                  "Xin chào 👋",
+
+                                  style: TextStyle(
+                                    color:
+                                    Colors.white70,
+
+                                    fontSize: 15,
+                                  ),
+                                ),
+
+                                const SizedBox(height: 5),
+
+                                Text(
+                                  user?.email ?? "",
+
+                                  style:
+                                  const TextStyle(
+                                    color:
+                                    Colors.white,
+
+                                    fontSize: 17,
+
+                                    fontWeight:
+                                    FontWeight.bold,
+                                  ),
+                                ),
+
+                                const SizedBox(height: 8),
+
+                                Container(
+
+                                  padding:
+                                  const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 6,
+                                  ),
+
+                                  decoration:
+                                  BoxDecoration(
+                                    color:
+                                    Colors.white
+                                        .withOpacity(
+                                      0.2,
+                                    ),
+
+                                    borderRadius:
+                                    BorderRadius.circular(
+                                      20,
+                                    ),
+                                  ),
+
+                                  child: const Text(
+                                    "Healthy Lifestyle",
+
+                                    style: TextStyle(
+                                      color:
+                                      Colors.white,
+
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          const Icon(
+                            Icons.favorite,
+                            color: Colors.red,
+                            size: 34,
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 22),
+
+                    /// ================= HEALTH SCORE =================
+                    Container(
+
+                      width: double.infinity,
+
+                      padding:
+                      const EdgeInsets.all(20),
+
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+
+                        borderRadius:
+                        BorderRadius.circular(28),
+
+                        boxShadow: const [
+
+                          BoxShadow(
+                            color: Colors.black12,
+                            blurRadius: 10,
+                          ),
+                        ],
+                      ),
+
+                      child: Row(
+
+                        mainAxisAlignment:
+                        MainAxisAlignment
+                            .spaceBetween,
+
+                        children: [
+
+                          Column(
+
                             crossAxisAlignment:
                             CrossAxisAlignment.start,
 
                             children: [
+
                               const Text(
-                                "Xin chào 👋",
+                                "Health Score",
+
                                 style: TextStyle(
-                                  color: Colors.white70,
-                                  fontSize: 15,
+                                  fontSize: 16,
+                                  color: Colors.black54,
                                 ),
                               ),
 
-                              const SizedBox(height: 5),
+                              const SizedBox(height: 10),
 
-                              Text(
-                                user?.email ?? "",
+                              Row(
+                                children: const [
 
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 17,
-                                  fontWeight: FontWeight.bold,
-                                ),
+                                  Text(
+                                    "85",
+
+                                    style: TextStyle(
+                                      fontSize: 42,
+                                      fontWeight:
+                                      FontWeight.bold,
+
+                                      color: Colors.green,
+                                    ),
+                                  ),
+
+                                  SizedBox(width: 8),
+
+                                  Text(
+                                    "/100",
+
+                                    style: TextStyle(
+                                      color:
+                                      Colors.black45,
+                                    ),
+                                  ),
+                                ],
                               ),
 
                               const SizedBox(height: 8),
 
-                              Container(
-                                padding:
-                                const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 6,
-                                ),
-
-                                decoration: BoxDecoration(
-                                  color:
-                                  Colors.white.withOpacity(0.2),
-
-                                  borderRadius:
-                                  BorderRadius.circular(20),
-                                ),
-
-                                child: const Text(
-                                  "Healthy Lifestyle",
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 12,
-                                  ),
-                                ),
+                              const Text(
+                                "Sức khỏe của bạn đang tốt 💪",
                               ),
                             ],
                           ),
-                        ),
 
-                        const Icon(
-                          Icons.favorite,
-                          color: Colors.red,
-                          size: 34,
-                        ),
-                      ],
-                    ),
-                  ),
+                          Container(
 
-                  const SizedBox(height: 22),
+                            padding:
+                            const EdgeInsets.all(18),
 
-                  /// ================= HEALTH SCORE =================
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(20),
+                            decoration: BoxDecoration(
+                              color:
+                              Colors.green.shade100,
 
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(28),
+                              shape: BoxShape.circle,
+                            ),
 
-                      boxShadow: const [
-                        BoxShadow(
-                          color: Colors.black12,
-                          blurRadius: 10,
-                        ),
-                      ],
+                            child: const Icon(
+                              Icons.monitor_heart,
+                              color: Colors.green,
+                              size: 45,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
 
-                    child: Row(
-                      mainAxisAlignment:
-                      MainAxisAlignment.spaceBetween,
+                    const SizedBox(height: 22),
 
-                      children: [
-                        Column(
+                    /// ================= WATER =================
+                    GestureDetector(
+
+                      onTap: () async {
+
+                        await Navigator.push(
+                          context,
+
+                          MaterialPageRoute(
+                            builder: (_) =>
+                            const WaterScreen(),
+                          ),
+                        );
+
+                        loadWater();
+                      },
+
+                      child: Container(
+
+                        width: double.infinity,
+
+                        padding:
+                        const EdgeInsets.all(20),
+
+                        decoration: BoxDecoration(
+
+                          gradient: LinearGradient(
+                            colors: [
+                              Colors.cyan.shade400,
+                              Colors.blue.shade500,
+                            ],
+                          ),
+
+                          borderRadius:
+                          BorderRadius.circular(28),
+                        ),
+
+                        child: Column(
+
                           crossAxisAlignment:
                           CrossAxisAlignment.start,
 
                           children: [
-                            const Text(
-                              "Health Score",
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: Colors.black54,
+
+                            Row(
+
+                              mainAxisAlignment:
+                              MainAxisAlignment
+                                  .spaceBetween,
+
+                              children: const [
+
+                                Text(
+                                  "Water Tracker 💧",
+
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 19,
+                                    fontWeight:
+                                    FontWeight.bold,
+                                  ),
+                                ),
+
+                                Icon(
+                                  Icons.water_drop,
+                                  color: Colors.white,
+                                  size: 42,
+                                ),
+                              ],
+                            ),
+
+                            const SizedBox(height: 18),
+
+                            ClipRRect(
+
+                              borderRadius:
+                              BorderRadius.circular(
+                                20,
+                              ),
+
+                              child:
+                              LinearProgressIndicator(
+                                value: waterProgress,
+
+                                minHeight: 12,
+
+                                backgroundColor:
+                                Colors.white24,
+
+                                color: Colors.white,
                               ),
                             ),
 
                             const SizedBox(height: 10),
 
-                            Row(
-                              children: const [
-                                Text(
-                                  "85",
-                                  style: TextStyle(
-                                    fontSize: 42,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.green,
-                                  ),
-                                ),
+                            Text(
+                              "$currentWater / $waterGoal ml",
 
-                                SizedBox(width: 8),
-
-                                Text(
-                                  "/100",
-                                  style: TextStyle(
-                                    color: Colors.black45,
-                                  ),
-                                ),
-                              ],
-                            ),
-
-                            const SizedBox(height: 8),
-
-                            const Text(
-                              "Sức khỏe của bạn đang tốt 💪",
-                              style: TextStyle(
-                                color: Colors.black87,
+                              style: const TextStyle(
+                                color: Colors.white,
                               ),
                             ),
                           ],
                         ),
-
-                        Container(
-                          padding: const EdgeInsets.all(18),
-
-                          decoration: BoxDecoration(
-                            color: Colors.green.shade100,
-                            shape: BoxShape.circle,
-                          ),
-
-                          child: const Icon(
-                            Icons.monitor_heart,
-                            color: Colors.green,
-                            size: 45,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 22),
-
-                  /// ================= WATER =================
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(20),
-
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          Colors.cyan.shade400,
-                          Colors.blue.shade500,
-                        ],
                       ),
-
-                      borderRadius: BorderRadius.circular(28),
                     ),
 
-                    child: Column(
-                      crossAxisAlignment:
-                      CrossAxisAlignment.start,
+                    const SizedBox(height: 28),
+
+                    const Text(
+                      "Quick Actions",
+
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    /// ================= GRID =================
+                    GridView.count(
+
+                      shrinkWrap: true,
+
+                      physics:
+                      const NeverScrollableScrollPhysics(),
+
+                      crossAxisCount: 2,
+
+                      crossAxisSpacing: 16,
+
+                      mainAxisSpacing: 16,
+
+                      childAspectRatio: 1.02,
 
                       children: [
-                        Row(
-                          mainAxisAlignment:
-                          MainAxisAlignment.spaceBetween,
 
-                          children: const [
-                            Text(
-                              "Water Tracker 💧",
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 19,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
+                        quickButton(
+                          context,
 
-                            Icon(
-                              Icons.water_drop,
-                              color: Colors.white,
-                              size: 42,
-                            ),
-                          ],
+                          "Health Check",
+
+                          "Theo dõi chỉ số",
+
+                          Icons.monitor_heart,
+
+                          Colors.red,
+
+                          const HealthInputScreen(),
                         ),
 
-                        const SizedBox(height: 18),
+                        quickButton(
+                          context,
 
-                        ClipRRect(
-                          borderRadius:
-                          BorderRadius.circular(20),
+                          "Lịch sử",
 
-                          child: LinearProgressIndicator(
-                            value: 0.6,
-                            minHeight: 12,
-                            backgroundColor: Colors.white24,
-                            color: Colors.white,
-                          ),
+                          "Xem kết quả cũ",
+
+                          Icons.history,
+
+                          Colors.orange,
+
+                          const HistoryScreen(),
                         ),
 
-                        const SizedBox(height: 10),
+                        quickButton(
+                          context,
 
-                        const Text(
-                          "1500 / 2500 ml",
-                          style: TextStyle(
-                            color: Colors.white,
-                          ),
+                          "Calories",
+
+                          "Tính calories",
+
+                          Icons.local_fire_department,
+
+                          Colors.deepOrange,
+
+                          const CalorieScreen(),
+                        ),
+
+                        quickButton(
+                          context,
+
+                          "Hồ sơ",
+
+                          "Thông tin cá nhân",
+
+                          Icons.person,
+
+                          Colors.blue,
+
+                          const ProfileScreen(),
+                        ),
+
+                        /// STEP
+                        quickButton(
+                          context,
+
+                          "Bước chân",
+
+                          "Theo dõi vận động",
+
+                          Icons.directions_walk,
+
+                          Colors.cyan,
+
+                          const StepScreen(),
+                        ),
+
+                        /// SLEEP
+                        quickButton(
+                          context,
+
+                          "Giấc ngủ",
+
+                          "Theo dõi ngủ nghỉ",
+
+                          Icons.nightlight_round,
+
+                          Colors.deepPurple,
+
+                          const SleepScreen(),
                         ),
                       ],
                     ),
-                  ),
 
-                  const SizedBox(height: 28),
-
-                  const Text(
-                    "Quick Actions",
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  /// ================= GRID =================
-                  GridView.count(
-                    shrinkWrap: true,
-
-                    physics:
-                    const NeverScrollableScrollPhysics(),
-
-                    crossAxisCount: 2,
-
-                    crossAxisSpacing: 16,
-
-                    mainAxisSpacing: 16,
-
-                    childAspectRatio: 1.02,
-
-                    children: [
-                      quickButton(
-                        context,
-                        "Health Check",
-                        "Theo dõi chỉ số",
-                        Icons.monitor_heart,
-                        Colors.red,
-                        const HealthInputScreen(),
-                      ),
-
-                      quickButton(
-                        context,
-                        "Lịch sử",
-                        "Xem kết quả cũ",
-                        Icons.history,
-                        Colors.orange,
-                        const HistoryScreen(),
-                      ),
-
-                      quickButton(
-                        context,
-                        "Calories",
-                        "Tính calories",
-                        Icons.local_fire_department,
-                        Colors.deepOrange,
-                        const CalorieScreen(),
-                      ),
-
-                      quickButton(
-                        context,
-                        "Hồ sơ",
-                        "Thông tin cá nhân",
-                        Icons.person,
-                        Colors.blue,
-                        const ProfileScreen(),
-                      ),
-
-                      /// ================= STEP =================
-                      quickButton(
-                        context,
-                        "Bước chân",
-                        "Theo dõi vận động",
-                        Icons.directions_walk,
-                        Colors.cyan,
-                        const StepScreen(),
-                      ),
-
-                      /// ================= SLEEP =================
-                      quickButton(
-                        context,
-                        "Giấc ngủ",
-                        "Theo dõi ngủ nghỉ",
-                        Icons.nightlight_round,
-                        Colors.deepPurple,
-                        const SleepScreen(),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 30),
-                ],
+                    const SizedBox(height: 30),
+                  ],
+                ),
               ),
             ),
           ),

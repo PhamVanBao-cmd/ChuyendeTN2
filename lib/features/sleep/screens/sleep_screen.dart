@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import 'package:theodoisuckhoe/core/services/notification_service.dart';
 
 class SleepScreen extends StatefulWidget {
   const SleepScreen({super.key});
@@ -13,11 +16,50 @@ class _SleepScreenState extends State<SleepScreen> {
 
   double goal = 8;
 
+  bool sleepReminder = true;
+
   TimeOfDay sleepTime =
   const TimeOfDay(hour: 23, minute: 0);
 
   TimeOfDay wakeTime =
   const TimeOfDay(hour: 6, minute: 30);
+
+  /// ================= INIT =================
+  @override
+  void initState() {
+    super.initState();
+
+    calculateSleepHours();
+
+    loadReminder();
+  }
+
+  /// ================= LOAD =================
+  Future<void> loadReminder() async {
+
+    final prefs =
+    await SharedPreferences.getInstance();
+
+    setState(() {
+
+      sleepReminder =
+          prefs.getBool(
+            "sleepReminder",
+          ) ?? true;
+    });
+  }
+
+  /// ================= SAVE =================
+  Future<void> saveReminder() async {
+
+    final prefs =
+    await SharedPreferences.getInstance();
+
+    await prefs.setBool(
+      "sleepReminder",
+      sleepReminder,
+    );
+  }
 
   /// ================= QUALITY =================
   String sleepQuality() {
@@ -55,14 +97,16 @@ class _SleepScreenState extends State<SleepScreen> {
     return sleepHours / goal;
   }
 
-  /// ================= CALCULATE HOURS =================
+  /// ================= CALCULATE =================
   void calculateSleepHours() {
 
     final sleepMinutes =
-        sleepTime.hour * 60 + sleepTime.minute;
+        sleepTime.hour * 60 +
+            sleepTime.minute;
 
     final wakeMinutes =
-        wakeTime.hour * 60 + wakeTime.minute;
+        wakeTime.hour * 60 +
+            wakeTime.minute;
 
     int totalMinutes;
 
@@ -70,21 +114,26 @@ class _SleepScreenState extends State<SleepScreen> {
 
       totalMinutes =
           wakeMinutes - sleepMinutes;
+
     } else {
 
       totalMinutes =
-          (24 * 60 - sleepMinutes) + wakeMinutes;
+          (24 * 60 - sleepMinutes) +
+              wakeMinutes;
     }
 
     setState(() {
-      sleepHours = totalMinutes / 60;
+      sleepHours =
+          totalMinutes / 60;
     });
   }
 
-  /// ================= PICK SLEEP TIME =================
+  /// ================= PICK SLEEP =================
   Future<void> pickSleepTime() async {
 
-    final picked = await showTimePicker(
+    final picked =
+    await showTimePicker(
+
       context: context,
 
       initialTime: sleepTime,
@@ -96,7 +145,8 @@ class _SleepScreenState extends State<SleepScreen> {
 
         return MediaQuery(
 
-          data: MediaQuery.of(context).copyWith(
+          data: MediaQuery.of(context)
+              .copyWith(
             alwaysUse24HourFormat: true,
           ),
 
@@ -112,13 +162,37 @@ class _SleepScreenState extends State<SleepScreen> {
       });
 
       calculateSleepHours();
+
+      /// ================= NOTIFICATION =================
+      if (sleepReminder) {
+
+        await NotificationService
+            .scheduleSleepReminder(
+          picked.hour,
+          picked.minute,
+        );
+      }
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context)
+          .showSnackBar(
+
+        SnackBar(
+          content: Text(
+            "Đã đặt nhắc ngủ lúc ${picked.format(context)} 😴",
+          ),
+        ),
+      );
     }
   }
 
-  /// ================= PICK WAKE TIME =================
+  /// ================= PICK WAKE =================
   Future<void> pickWakeTime() async {
 
-    final picked = await showTimePicker(
+    final picked =
+    await showTimePicker(
+
       context: context,
 
       initialTime: wakeTime,
@@ -130,7 +204,8 @@ class _SleepScreenState extends State<SleepScreen> {
 
         return MediaQuery(
 
-          data: MediaQuery.of(context).copyWith(
+          data: MediaQuery.of(context)
+              .copyWith(
             alwaysUse24HourFormat: true,
           ),
 
@@ -160,7 +235,8 @@ class _SleepScreenState extends State<SleepScreen> {
     return Expanded(
       child: Container(
 
-        padding: const EdgeInsets.all(18),
+        padding:
+        const EdgeInsets.all(18),
 
         decoration: BoxDecoration(
           color: Colors.white,
@@ -199,7 +275,8 @@ class _SleepScreenState extends State<SleepScreen> {
 
               style: const TextStyle(
                 fontSize: 22,
-                fontWeight: FontWeight.bold,
+                fontWeight:
+                FontWeight.bold,
               ),
             ),
 
@@ -222,12 +299,19 @@ class _SleepScreenState extends State<SleepScreen> {
   Widget build(BuildContext context) {
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FB),
+
+      backgroundColor:
+      const Color(0xFFF5F7FB),
 
       appBar: AppBar(
+
         elevation: 0,
-        backgroundColor: Colors.transparent,
-        foregroundColor: Colors.black,
+
+        backgroundColor:
+        Colors.transparent,
+
+        foregroundColor:
+        Colors.black,
 
         title: const Text(
           "Theo dõi giấc ngủ",
@@ -235,18 +319,25 @@ class _SleepScreenState extends State<SleepScreen> {
       ),
 
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+
+        padding:
+        const EdgeInsets.all(16),
 
         child: Column(
           children: [
 
             /// ================= HEADER =================
             Container(
+
               width: double.infinity,
-              padding: const EdgeInsets.all(28),
+
+              padding:
+              const EdgeInsets.all(28),
 
               decoration: BoxDecoration(
-                gradient: const LinearGradient(
+
+                gradient:
+                const LinearGradient(
                   colors: [
                     Color(0xFF667eea),
                     Color(0xFF764ba2),
@@ -274,7 +365,8 @@ class _SleepScreenState extends State<SleepScreen> {
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 55,
-                      fontWeight: FontWeight.bold,
+                      fontWeight:
+                      FontWeight.bold,
                     ),
                   ),
 
@@ -289,13 +381,16 @@ class _SleepScreenState extends State<SleepScreen> {
 
                   const SizedBox(height: 20),
 
-                  /// ================= PROGRESS =================
                   ClipRRect(
+
                     borderRadius:
                     BorderRadius.circular(20),
 
-                    child: LinearProgressIndicator(
+                    child:
+                    LinearProgressIndicator(
+
                       value: progress,
+
                       minHeight: 12,
 
                       backgroundColor:
@@ -347,13 +442,15 @@ class _SleepScreenState extends State<SleepScreen> {
 
             const SizedBox(height: 20),
 
-            /// ================= CHANGE BUTTONS =================
+            /// ================= BUTTONS =================
             Row(
               children: [
 
                 Expanded(
                   child: ElevatedButton.icon(
-                    onPressed: pickSleepTime,
+
+                    onPressed:
+                    pickSleepTime,
 
                     icon: const Icon(
                       Icons.nightlight,
@@ -363,7 +460,8 @@ class _SleepScreenState extends State<SleepScreen> {
                       "Giờ ngủ",
                     ),
 
-                    style: ElevatedButton.styleFrom(
+                    style:
+                    ElevatedButton.styleFrom(
                       backgroundColor:
                       Colors.deepPurple,
 
@@ -375,9 +473,12 @@ class _SleepScreenState extends State<SleepScreen> {
                         vertical: 14,
                       ),
 
-                      shape: RoundedRectangleBorder(
+                      shape:
+                      RoundedRectangleBorder(
                         borderRadius:
-                        BorderRadius.circular(18),
+                        BorderRadius.circular(
+                          18,
+                        ),
                       ),
                     ),
                   ),
@@ -387,7 +488,9 @@ class _SleepScreenState extends State<SleepScreen> {
 
                 Expanded(
                   child: ElevatedButton.icon(
-                    onPressed: pickWakeTime,
+
+                    onPressed:
+                    pickWakeTime,
 
                     icon: const Icon(
                       Icons.wb_sunny,
@@ -397,7 +500,8 @@ class _SleepScreenState extends State<SleepScreen> {
                       "Giờ dậy",
                     ),
 
-                    style: ElevatedButton.styleFrom(
+                    style:
+                    ElevatedButton.styleFrom(
                       backgroundColor:
                       Colors.orange,
 
@@ -409,9 +513,12 @@ class _SleepScreenState extends State<SleepScreen> {
                         vertical: 14,
                       ),
 
-                      shape: RoundedRectangleBorder(
+                      shape:
+                      RoundedRectangleBorder(
                         borderRadius:
-                        BorderRadius.circular(18),
+                        BorderRadius.circular(
+                          18,
+                        ),
                       ),
                     ),
                   ),
@@ -421,10 +528,13 @@ class _SleepScreenState extends State<SleepScreen> {
 
             const SizedBox(height: 25),
 
-            /// ================= QUALITY CARD =================
+            /// ================= QUALITY =================
             Container(
+
               width: double.infinity,
-              padding: const EdgeInsets.all(20),
+
+              padding:
+              const EdgeInsets.all(20),
 
               decoration: BoxDecoration(
                 color: Colors.white,
@@ -460,6 +570,7 @@ class _SleepScreenState extends State<SleepScreen> {
 
                   Expanded(
                     child: Column(
+
                       crossAxisAlignment:
                       CrossAxisAlignment.start,
 
@@ -492,12 +603,15 @@ class _SleepScreenState extends State<SleepScreen> {
               ),
             ),
 
-            const SizedBox(height: 25),
+            const SizedBox(height: 20),
 
-            /// ================= TIPS =================
+            /// ================= ALARM =================
             Container(
+
               width: double.infinity,
-              padding: const EdgeInsets.all(20),
+
+              padding:
+              const EdgeInsets.all(20),
 
               decoration: BoxDecoration(
                 color: Colors.white,
@@ -513,61 +627,88 @@ class _SleepScreenState extends State<SleepScreen> {
                 ],
               ),
 
-              child: const Column(
-                crossAxisAlignment:
-                CrossAxisAlignment.start,
-
+              child: Row(
                 children: [
 
-                  Row(
-                    children: [
+                  CircleAvatar(
+                    radius: 28,
 
-                      Icon(
-                        Icons.tips_and_updates,
-                        color: Colors.orange,
-                      ),
+                    backgroundColor:
+                    Colors.deepPurple
+                        .withOpacity(0.15),
 
-                      SizedBox(width: 10),
+                    child: const Icon(
+                      Icons.alarm,
+                      color: Colors.deepPurple,
+                    ),
+                  ),
 
-                      Text(
-                        "Mẹo ngủ ngon",
+                  const SizedBox(width: 15),
 
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
+                  Expanded(
+                    child: Column(
+
+                      crossAxisAlignment:
+                      CrossAxisAlignment.start,
+
+                      children: [
+
+                        const Text(
+                          "Nhắc giờ đi ngủ",
+
+                          style: TextStyle(
+                            fontSize: 17,
+                            fontWeight:
+                            FontWeight.bold,
+                          ),
                         ),
-                      ),
-                    ],
+
+                        const SizedBox(height: 5),
+
+                        Text(
+                          sleepTime.format(context),
+
+                          style: const TextStyle(
+                            color: Colors.grey,
+                            fontSize: 15,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
 
-                  SizedBox(height: 18),
+                  Switch(
 
-                  Text(
-                    "• Ngủ trước 23h",
-                  ),
+                    value:
+                    sleepReminder,
 
-                  SizedBox(height: 10),
+                    activeColor:
+                    Colors.deepPurple,
 
-                  Text(
-                    "• Hạn chế điện thoại trước khi ngủ",
-                  ),
+                    onChanged:
+                        (value) async {
 
-                  SizedBox(height: 10),
+                      setState(() {
+                        sleepReminder =
+                            value;
+                      });
 
-                  Text(
-                    "• Không uống cafe buổi tối",
-                  ),
+                      await saveReminder();
 
-                  SizedBox(height: 10),
+                      if (value) {
 
-                  Text(
-                    "• Giữ phòng ngủ yên tĩnh",
-                  ),
+                        await NotificationService
+                            .scheduleSleepReminder(
+                          sleepTime.hour,
+                          sleepTime.minute,
+                        );
 
-                  SizedBox(height: 10),
+                      } else {
 
-                  Text(
-                    "• Duy trì lịch ngủ đều đặn",
+                        await NotificationService
+                            .cancelSleepReminder();
+                      }
+                    },
                   ),
                 ],
               ),

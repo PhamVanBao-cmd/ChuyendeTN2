@@ -16,8 +16,9 @@ class WelcomeScreen extends StatelessWidget {
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              Color(0xFF6A11CB),
-              Color(0xFF2575FC),
+              Color(0xFF4A00E0),
+              Color(0xFF8E2DE2),
+              Color(0xFF00C6FF),
             ],
           ),
         ),
@@ -25,27 +26,53 @@ class WelcomeScreen extends StatelessWidget {
         child: SafeArea(
           child: Center(
             child: SingleChildScrollView(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 430),
+              child: Padding(
+                padding: const EdgeInsets.all(22),
 
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
+                child: Column(
+                  children: [
 
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
+                    /// ================= LOGO =================
+                    TweenAnimationBuilder(
+                      tween: Tween<double>(
+                        begin: 0.8,
+                        end: 1,
+                      ),
 
-                      /// LOGO
-                      Container(
+                      duration: const Duration(
+                        milliseconds: 1200,
+                      ),
+
+                      curve: Curves.elasticOut,
+
+                      builder: (context, value, child) {
+
+                        return Transform.scale(
+                          scale: value,
+                          child: child,
+                        );
+                      },
+
+                      child: Container(
                         padding: const EdgeInsets.all(28),
 
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.15),
                           shape: BoxShape.circle,
+
+                          color: Colors.white.withOpacity(0.15),
+
                           border: Border.all(
                             color: Colors.white24,
                             width: 2,
                           ),
+
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.white.withOpacity(0.15),
+                              blurRadius: 30,
+                              spreadRadius: 5,
+                            ),
+                          ],
                         ),
 
                         child: const Icon(
@@ -54,115 +81,159 @@ class WelcomeScreen extends StatelessWidget {
                           color: Colors.white,
                         ),
                       ),
+                    ),
 
-                      const SizedBox(height: 30),
+                    const SizedBox(height: 35),
 
-                      const Text(
-                        "Health App",
-                        style: TextStyle(
-                          fontSize: 34,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
+                    /// ================= TITLE =================
+                    const Text(
+                      "Health Care+",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 36,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1,
+                      ),
+                    ),
+
+                    const SizedBox(height: 12),
+
+                    const Text(
+                      "Ứng dụng theo dõi sức khỏe thông minh\nBước chân • Giấc ngủ • Nước uống • BMI",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 16,
+                        height: 1.6,
+                      ),
+                    ),
+
+                    const SizedBox(height: 45),
+
+                    /// ================= MAIN CARD =================
+                    Container(
+                      width: double.infinity,
+
+                      padding: const EdgeInsets.all(24),
+
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+
+                        borderRadius:
+                        BorderRadius.circular(32),
+
+                        boxShadow: const [
+                          BoxShadow(
+                            color: Colors.black26,
+                            blurRadius: 18,
+                            offset: Offset(0, 8),
+                          ),
+                        ],
                       ),
 
-                      const SizedBox(height: 10),
+                      child: Column(
+                        children: [
 
-                      const Text(
-                        "Theo dõi sức khỏe thông minh\nBMI • Calories • Huyết áp • Biểu đồ",
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: Colors.white70,
-                          height: 1.5,
-                          fontSize: 16,
-                        ),
-                      ),
+                          feature(
+                            Icons.directions_walk,
+                            "Theo dõi bước chân",
+                            "Đếm bước, calories & khoảng cách",
+                            Colors.blue,
+                          ),
 
-                      const SizedBox(height: 45),
+                          const SizedBox(height: 18),
 
-                      /// CARD
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(24),
+                          feature(
+                            Icons.water_drop,
+                            "Theo dõi nước uống",
+                            "Nhắc uống nước thông minh",
+                            Colors.cyan,
+                          ),
 
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(30),
-                          boxShadow: const [
-                            BoxShadow(
-                              color: Colors.black26,
-                              blurRadius: 15,
-                            ),
-                          ],
-                        ),
+                          const SizedBox(height: 18),
 
-                        child: Column(
-                          children: [
+                          feature(
+                            Icons.nightlight_round,
+                            "Theo dõi giấc ngủ",
+                            "Phân tích chất lượng giấc ngủ",
+                            Colors.deepPurple,
+                          ),
 
-                            feature(
-                              Icons.monitor_heart,
-                              "Theo dõi sức khỏe",
-                              "Đo BMI, nhịp tim, huyết áp",
-                              Colors.red,
-                            ),
+                          const SizedBox(height: 18),
 
-                            const SizedBox(height: 18),
+                          feature(
+                            Icons.favorite,
+                            "Chỉ số sức khỏe",
+                            "BMI & đánh giá cơ thể",
+                            Colors.red,
+                          ),
 
-                            feature(
-                              Icons.local_fire_department,
-                              "Tính Calories",
-                              "Đưa ra nhu cầu calories mỗi ngày",
-                              Colors.orange,
-                            ),
+                          const SizedBox(height: 35),
 
-                            const SizedBox(height: 18),
+                          /// BUTTON
+                          SizedBox(
+                            width: double.infinity,
 
-                            feature(
-                              Icons.show_chart,
-                              "Biểu đồ & lịch sử",
-                              "Xem tiến trình sức khỏe theo thời gian",
-                              Colors.green,
-                            ),
+                            child: ElevatedButton(
+                              onPressed: () {
 
-                            const SizedBox(height: 30),
+                                Navigator.push(
+                                  context,
 
-                            SizedBox(
-                              width: double.infinity,
-
-                              child: ElevatedButton(
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.blue,
-                                  foregroundColor: Colors.white,
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 16,
+                                  MaterialPageRoute(
+                                    builder: (_) =>
+                                    const LoginScreen(),
                                   ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius:
-                                    BorderRadius.circular(18),
-                                  ),
+                                );
+                              },
+
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor:
+                                const Color(0xFF2575FC),
+
+                                foregroundColor:
+                                Colors.white,
+
+                                elevation: 8,
+
+                                padding:
+                                const EdgeInsets.symmetric(
+                                  vertical: 17,
                                 ),
 
-                                onPressed: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) =>
-                                      const LoginScreen(),
-                                    ),
-                                  );
-                                },
+                                shape:
+                                RoundedRectangleBorder(
+                                  borderRadius:
+                                  BorderRadius.circular(
+                                    20,
+                                  ),
+                                ),
+                              ),
 
-                                child: const Text(
-                                  "Bắt đầu",
-                                  style: TextStyle(fontSize: 16),
+                              child: const Text(
+                                "Bắt đầu ngay",
+                                style: TextStyle(
+                                  fontSize: 17,
+                                  fontWeight:
+                                  FontWeight.bold,
                                 ),
                               ),
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
+                    ),
+
+                    const SizedBox(height: 30),
+
+                    /// FOOTER
+                    const Text(
+                      "Sống khỏe hơn mỗi ngày 💙",
+                      style: TextStyle(
+                        color: Colors.white70,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -178,52 +249,71 @@ class WelcomeScreen extends StatelessWidget {
       String subtitle,
       Color color,
       ) {
-    return Row(
-      children: [
 
-        Container(
-          padding: const EdgeInsets.all(14),
+    return Container(
+      padding: const EdgeInsets.all(16),
 
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.12),
-            borderRadius: BorderRadius.circular(16),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.08),
+
+        borderRadius:
+        BorderRadius.circular(22),
+      ),
+
+      child: Row(
+        children: [
+
+          Container(
+            padding: const EdgeInsets.all(14),
+
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.15),
+
+              borderRadius:
+              BorderRadius.circular(18),
+            ),
+
+            child: Icon(
+              icon,
+              color: color,
+              size: 30,
+            ),
           ),
 
-          child: Icon(
-            icon,
-            color: color,
-            size: 28,
-          ),
-        ),
+          const SizedBox(width: 16),
 
-        const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment:
+              CrossAxisAlignment.start,
 
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+              children: [
 
-              Text(
-                title,
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
+                Text(
+                  title,
+
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight:
+                    FontWeight.bold,
+                  ),
                 ),
-              ),
 
-              const SizedBox(height: 4),
+                const SizedBox(height: 5),
 
-              Text(
-                subtitle,
-                style: const TextStyle(
-                  color: Colors.grey,
-                  height: 1.4,
+                Text(
+                  subtitle,
+
+                  style: const TextStyle(
+                    color: Colors.grey,
+                    height: 1.4,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
